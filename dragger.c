@@ -3,9 +3,10 @@
 //@@tabwidth -2
 //@@language c
 //@+others
-//@-others
+//@+node:caminhante.20240208145241.1: ** /copyright notice
 /*
  * Copyright 2010 Johan Veenhuizen
+ * Copyleft 2024 X Caminhante
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -25,29 +26,29 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-
+//@+node:caminhante.20240210012928.1: ** /includes
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
 
 #include "wind.h"
-
+//@+node:caminhante.20240210012923.1: ** struct dragger
 struct dragger {
-	struct listener listener;
-	void (*dragnotify)(void *, int, int, unsigned long, Time);
-	void *arg;
-	unsigned long counter;
-	Window window;
-	int x0;
-	int y0;
-	int x;
-	int y;
+  struct listener listener;
+  void (*dragnotify)(void *, int, int, unsigned long, Time);
+  void *arg;
+  unsigned long counter;
+  Window window;
+  int x0;
+  int y0;
+  int x;
+  int y;
 };
-
-static void event(void *, XEvent *);
-static void buttonpress3(struct dragger *, XButtonEvent *);
+//@+node:caminhante.20240210012917.1: ** /protótipos
+static void devent(void *, XEvent *);
+static void dbuttonpress(struct dragger *, XButtonEvent *);
 static void motionnotify(struct dragger *, XMotionEvent *);
-
+//@+node:caminhante.20240210012911.1: ** dcreate
 struct dragger *dcreate(Window parent, int x, int y,
 		int width, int height, int gravity, Cursor cursor,
 		void (*dragnotify)(void *, int, int, unsigned long, Time),
@@ -60,7 +61,7 @@ struct dragger *dcreate(Window parent, int x, int y,
 			&(XSetWindowAttributes){
 				.win_gravity = gravity,
 				.cursor = cursor });
-	d->listener.function = event;
+	d->listener.function = devent;
 	d->listener.pointer = d;
 	setlistener(d->window, &d->listener);
 	d->counter = 0;
@@ -117,27 +118,27 @@ struct dragger *dcreate(Window parent, int x, int y,
 	XMapWindow(dpy, d->window);
 	return d;
 }
-
+//@+node:caminhante.20240210012859.1: ** ddestroy
 void ddestroy(struct dragger *d)
 {
 	setlistener(d->window, NULL);
 	XDestroyWindow(dpy, d->window);
 	free(d);
 }
-
-static void event(void *self, XEvent *e)
+//@+node:caminhante.20240210012855.1: ** devent
+static void devent(void *self, XEvent *e)
 {
 	switch (e->type) {
 	case MotionNotify:
 		motionnotify(self, &e->xmotion);
 		break;
 	case ButtonPress:
-		buttonpress3(self, &e->xbutton);
+		dbuttonpress(self, &e->xbutton);
 		break;
 	}
 }
-
-static void buttonpress3(struct dragger *d, XButtonEvent *e)
+//@+node:caminhante.20240210012823.1: ** dbuttonpress
+static void dbuttonpress(struct dragger *d, XButtonEvent *e)
 {
 	d->counter = 0;
 	d->x = e->x - d->x0;
@@ -148,7 +149,7 @@ static void buttonpress3(struct dragger *d, XButtonEvent *e)
 				e->y_root - d->y,
 				d->counter++, e->time);
 }
-
+//@+node:caminhante.20240210012755.1: ** motionnotify
 static void motionnotify(struct dragger *d, XMotionEvent *e)
 {
 	if (d->dragnotify != NULL)
@@ -156,4 +157,5 @@ static void motionnotify(struct dragger *d, XMotionEvent *e)
 				e->x_root - d->x, e->y_root - d->y,
 				d->counter++, e->time);
 }
+//@-others
 //@-leo

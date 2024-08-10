@@ -11,7 +11,7 @@
 #define STRING(EXPR) #EXPR
 #define DEBUG_EXPR(PRINTFFLAG, EXPR) \
   printf("* At %s:%d, function %s, expression '%s' = " PRINTFFLAG "\n", \
-  __FILE__, __LINE__, __PRETTY_FUNCTION__, STRING(EXPR), EXPR);
+    __FILE__, __LINE__, __PRETTY_FUNCTION__, STRING(EXPR), EXPR)
 
 #include <limits.h>
 #if __SIZEOF_POINTER__ == 4

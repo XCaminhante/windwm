@@ -238,235 +238,235 @@ static void usage(FILE *f)
 			" [ display ]\n", progname);
 }
 //@+node:caminhante.20240208144452.1: ** main
-int main(int argc, char *argv[])
-{
-	progname = argv[0];
+int main (int argc, char *argv[]) {
+  //@+others
+  //@-others
+  progname = argv[0];
 
-	// The Xmb* functions use LC_CTYPE
-	setlocale(LC_CTYPE, "");
+  // The Xmb* functions use LC_CTYPE
+  setlocale(LC_CTYPE, "");
 
-	srand((unsigned)time(NULL));
+  srand((unsigned)time(NULL));
 
-	runlevel = RL_STARTUP;
+  runlevel = RL_STARTUP;
 
-	char *ftname = NULL;
+  char *ftname = NULL;
 
-	char *fname = "rgb:00/00/00";
-	char *bname = "rgb:ff/ff/ff";
-	char *hlfname = "rgb:00/00/00";
-	char *hlbname = "rgb:00/ff/ff";
+  char *fname = "rgb:00/00/00";
+  char *bname = "rgb:ff/ff/ff";
+  char *hlfname = "rgb:00/00/00";
+  char *hlbname = "rgb:00/ff/ff";
 
-	Desk ndesk = 0;
+  Desk ndesk = 0;
 
-	int opt;
-	while ((opt = getopt(argc, argv, "B:b:F:f:n:t:v")) != -1)
-		switch (opt) {
-		case 'B':
-			hlbname = optarg;
-			break;
-		case 'b':
-			bname = optarg;
-			break;
-		case 'F':
-			hlfname = optarg;
-			break;
-		case 'f':
-			fname = optarg;
-			break;
-		case 'n':
-			errno = 0;
-			char *p;
-			long n = strtol(optarg, &p, 10);
-			if (n < 0 || errno != 0 ||
-					*optarg == '\0' || *p != '\0') {
-				errorf("%s: invalid desktop count", optarg);
-				exit(1);
-			}
-			ndesk = n;
-			break;
-		case 't':
-			ftname = optarg;
-			break;
-		case 'v':
-			debug = True;
-			break;
-		default:
-			usage(stderr);
-			exit(1);
-		}
+  int opt;
+  while ((opt = getopt(argc, argv, "B:b:F:f:n:t:v")) != -1) {
+    switch (opt) {
+    case 'B':
+      hlbname = optarg;
+      break;
+    case 'b':
+      bname = optarg;
+      break;
+    case 'F':
+      hlfname = optarg;
+      break;
+    case 'f':
+      fname = optarg;
+      break;
+    case 'n':
+      errno = 0;
+      char *p;
+      long n = strtol(optarg, &p, 10);
+      if (n < 0 || errno != 0 ||
+        *optarg == '\0' || *p != '\0') {
+        errorf("%s: invalid desktop count", optarg);
+        return 1;
+      }
+      ndesk = n;
+      break;
+    case 't':
+      ftname = optarg;
+      break;
+    case 'v':
+      debug = True;
+      break;
+    default:
+      usage(stderr);
+      return 1;
+    }
+  }
 
-	if (optind < argc)
-		displayname = argv[optind++];
+  if (optind < argc) { displayname = argv[optind++]; }
 
-	if (optind < argc) {
-		errorf("unexpected argument -- %s", argv[optind]);
-		usage(stderr);
-		exit(1);
-	}
+  if (optind < argc) {
+    errorf("unexpected argument -- %s", argv[optind]);
+    usage(stderr);
+    return 1;
+  }
 
-	if (debug) {
-		fprintf(stderr, "%s\n", PACKAGE_STRING);
-		fprintf(stderr, "Synchronous DEBUG mode enabled. "
-				"Printing Xlib errors on standard error.\n");
-		fprintf(stderr, "Report bugs to <%s>.\n", PACKAGE_BUGREPORT);
-	}
+  if (debug) {
+    fprintf(stderr, "%s\n", PACKAGE_STRING);
+    fprintf(stderr, "Synchronous DEBUG mode enabled. "
+        "Printing Xlib errors on standard error.\n");
+    fprintf(stderr, "Report bugs to <%s>.\n", PACKAGE_BUGREPORT);
+  }
 
-	XSetErrorHandler(errhandler);
+  XSetErrorHandler(errhandler);
 
-	if ((dpy = XOpenDisplay(displayname)) == NULL) {
-		errorf("cannot open display \"%s\"",
-				XDisplayName(displayname));
-		exit(1);
-	}
+  if ((dpy = XOpenDisplay(displayname)) == NULL) {
+    errorf("cannot open display \"%s\"",
+      XDisplayName(displayname));
+    return 1;
+  }
 
-	XSynchronize(dpy, debug);
+  XSynchronize(dpy, debug);
 
-	scr = DefaultScreen(dpy);
-	root = DefaultRootWindow(dpy);
+  scr = DefaultScreen(dpy);
+  root = DefaultRootWindow(dpy);
 
-	font = ftload(ftname);
-	if (font == NULL) {
-		errorf("cannot load font");
-		exit(1);
-	}
-	fnormal = ftloadcolor(fname);
-	fhighlight = ftloadcolor(hlfname);
-	if (fnormal == NULL || fhighlight == NULL) {
-		errorf("cannot load font colors");
-		exit(1);
-	}
+  font = ftload(ftname);
+  if (font == NULL) {
+    errorf("cannot load font");
+    return 1;
+  }
+  fnormal = ftloadcolor(fname);
+  fhighlight = ftloadcolor(hlfname);
+  if (fnormal == NULL || fhighlight == NULL) {
+    errorf("cannot load font colors");
+    return 1;
+  }
 
-	halfleading = (3 * font->size / 10) / 2;
-	lineheight = font->size + 2 * halfleading;
+  halfleading = (3 * font->size / 10) / 2;
+  lineheight = font->size + 2 * halfleading;
 
-	if (lineheight % 2 == 0)
-		deletebitmap = &deleven;
-	else
-		deletebitmap = &delodd;
+  if (lineheight % 2 == 0) {
+    deletebitmap = &deleven; }
+  else {
+    deletebitmap = &delodd; }
 
-	foregroundpixel = getpixel(fname);
-	backgroundpixel = getpixel(bname);
-	hlforegroundpixel = getpixel(hlfname);
-	hlbackgroundpixel = getpixel(hlbname);
+  foregroundpixel = getpixel(fname);
+  backgroundpixel = getpixel(bname);
+  hlforegroundpixel = getpixel(hlfname);
+  hlbackgroundpixel = getpixel(hlbname);
 
-	foreground = XCreateGC(dpy, root, GCForeground | GCBackground,
-			&(XGCValues){
-				.foreground = foregroundpixel,
-				.background = backgroundpixel });
-	background = XCreateGC(dpy, root, GCForeground | GCBackground,
-			&(XGCValues){
-				.foreground = backgroundpixel,
-				.background = foregroundpixel });
-	hlforeground = XCreateGC(dpy, root, GCForeground | GCBackground,
-			&(XGCValues){
-				.foreground = hlforegroundpixel,
-				.background = hlbackgroundpixel });
-	hlbackground = XCreateGC(dpy, root, GCForeground | GCBackground,
-			&(XGCValues){
-				.foreground = hlbackgroundpixel,
-				.background = hlforegroundpixel });
+  foreground = XCreateGC(dpy, root, GCForeground | GCBackground,
+      &(XGCValues){
+        .foreground = foregroundpixel,
+        .background = backgroundpixel });
+  background = XCreateGC(dpy, root, GCForeground | GCBackground,
+      &(XGCValues){
+        .foreground = backgroundpixel,
+        .background = foregroundpixel });
+  hlforeground = XCreateGC(dpy, root, GCForeground | GCBackground,
+      &(XGCValues){
+        .foreground = hlforegroundpixel,
+        .background = hlbackgroundpixel });
+  hlbackground = XCreateGC(dpy, root, GCForeground | GCBackground,
+      &(XGCValues){
+        .foreground = hlbackgroundpixel,
+        .background = hlforegroundpixel });
 
-	listeners = XUniqueContext();
+  listeners = XUniqueContext();
 
-	sigset_t sigsafemask;
-	sigprocmask(SIG_SETMASK, NULL, &sigmask);
-	sigprocmask(SIG_SETMASK, NULL, &sigsafemask);
+  sigset_t sigsafemask;
+  sigprocmask(SIG_SETMASK, NULL, &sigmask);
+  sigprocmask(SIG_SETMASK, NULL, &sigsafemask);
 
-	struct sigaction sa;
-	sigfillset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART;
-	sa.sa_handler = onsignal;
-	struct sigaction osa;
+  struct sigaction sa;
+  sigfillset(&sa.sa_mask);
+  sa.sa_flags = SA_RESTART;
+  sa.sa_handler = onsignal;
+  struct sigaction osa;
 
-	sigaction(SIGHUP, NULL, &osa);
-	if (osa.sa_handler != SIG_IGN) {
-		sigaction(SIGHUP, &sa, NULL);
-		sigaddset(&sigsafemask, SIGHUP);
-	}
+  sigaction(SIGHUP, NULL, &osa);
+  if (osa.sa_handler != SIG_IGN) {
+    sigaction(SIGHUP, &sa, NULL);
+    sigaddset(&sigsafemask, SIGHUP);
+  }
 
-	sigaction(SIGINT, NULL, &osa);
-	if (osa.sa_handler != SIG_IGN) {
-		sigaction(SIGINT, &sa, NULL);
-		sigaddset(&sigsafemask, SIGINT);
-	}
+  sigaction(SIGINT, NULL, &osa);
+  if (osa.sa_handler != SIG_IGN) {
+    sigaction(SIGINT, &sa, NULL);
+    sigaddset(&sigsafemask, SIGINT);
+  }
 
-	sigaction(SIGTERM, NULL, &osa);
-	if (osa.sa_handler != SIG_IGN) {
-		sigaction(SIGTERM, &sa, NULL);
-		sigaddset(&sigsafemask, SIGTERM);
-	}
+  sigaction(SIGTERM, NULL, &osa);
+  if (osa.sa_handler != SIG_IGN) {
+    sigaction(SIGTERM, &sa, NULL);
+    sigaddset(&sigsafemask, SIGTERM);
+  }
 
-	sigprocmask(SIG_SETMASK, &sigsafemask, NULL);
+  sigprocmask(SIG_SETMASK, &sigsafemask, NULL);
 
-	WM_CHANGE_STATE = XInternAtom(dpy, "WM_CHANGE_STATE", False);
-	WM_DELETE_WINDOW = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
-	WM_PROTOCOLS = XInternAtom(dpy, "WM_PROTOCOLS", False);
-	WM_STATE = XInternAtom(dpy, "WM_STATE", False);
+  WM_CHANGE_STATE = XInternAtom(dpy, "WM_CHANGE_STATE", False);
+  WM_DELETE_WINDOW = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+  WM_PROTOCOLS = XInternAtom(dpy, "WM_PROTOCOLS", False);
+  WM_STATE = XInternAtom(dpy, "WM_STATE", False);
 
-	initroot();
-	ewmh_startwm();
-	mwm_startwm();
+  initroot();
+  ewmh_startwm();
+  mwm_startwm();
 
-	if (ndesk != 0)
-		setndesk(ndesk);
+  if (ndesk != 0) { setndesk(ndesk); }
 
-	XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
-	manageall();
+  XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
+  manageall();
 
-	refocus(CurrentTime);
+  refocus(CurrentTime);
 
-	runlevel = RL_NORMAL;
+  runlevel = RL_NORMAL;
 
-	while (waitevent() != -1) {
-		XEvent e;
-		XNextEvent(dpy, &e);
-		if (redirect(&e, e.xany.window) == -1) {
-			/*
-			 * EWMH specifies some root window client
-			 * messages with a non-root event window,
-			 * so we need to redirect those manually.
-			 */
-			if (e.type == ClientMessage)
-				redirect(&e, root);
-		}
-		restack();
-	}
+  while (waitevent() != -1) {
+    XEvent e;
+    XNextEvent(dpy, &e);
+    if (redirect(&e, e.xany.window) == -1) {
+      /*
+       * EWMH specifies some root window client
+       * messages with a non-root event window,
+       * so we need to redirect those manually.
+       */
+      if (e.type == ClientMessage) {
+        redirect(&e, root); }
+    }
+    restack();
+  }
 
-	runlevel = RL_SHUTDOWN;
+  runlevel = RL_SHUTDOWN;
 
-	// We make sure the focused window stays on top
-	// when we map windows from other desktops, and
-	// to warp the pointer so that focus is not lost.
-	Window w = None;
-	struct geometry g;
-	struct client *c = getfocus();
-	if (c != NULL) {
-		cpopapp(c);
-		restack();
-		w = cgetwin(c);
-		g = cgetgeom(c);
-	}
+  // We make sure the focused window stays on top
+  // when we map windows from other desktops, and
+  // to warp the pointer so that focus is not lost.
+  Window w = None;
+  struct geometry g;
+  struct client *c = getfocus();
+  if (c != NULL) {
+    cpopapp(c);
+    restack();
+    w = cgetwin(c);
+    g = cgetgeom(c);
+  }
 
-	unmanageall();
+  unmanageall();
 
-	if (w != None)
-		XWarpPointer(dpy, None, w, 0, 0, 0, 0,
-				g.width / 2, g.height / 2);
-	XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
+  if (w != None) {
+    XWarpPointer(dpy, None, w, 0, 0, 0, 0,
+      g.width / 2, g.height / 2); }
+  XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 
-	ewmh_stopwm();
+  ewmh_stopwm();
 
-	ftfreecolor(fnormal);
-	ftfreecolor(fhighlight);
-	ftfree(font);
+  ftfreecolor(fnormal);
+  ftfreecolor(fhighlight);
+  ftfree(font);
 
-	XFreeGC(dpy, foreground);
-	XFreeGC(dpy, background);
-	XFreeGC(dpy, hlforeground);
-	XFreeGC(dpy, hlbackground);
-	XCloseDisplay(dpy);
+  XFreeGC(dpy, foreground);
+  XFreeGC(dpy, background);
+  XFreeGC(dpy, hlforeground);
+  XFreeGC(dpy, hlbackground);
+  XCloseDisplay(dpy);
 
-	return exitstatus;
+  return exitstatus;
 }
 //@-others
 //@-leo

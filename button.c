@@ -55,7 +55,7 @@ static void expose(struct button *, XExposeEvent *);
 static void unmapnotify(struct button *, XUnmapEvent *);
 static void bevent(void *, XEvent *);
 //@+node:caminhante.20240208145215.1: ** bupdate
-static void bupdate(struct button *b) {
+static void bupdate (struct button *b) {
   //BUG por algum motivo o valor de b->bitmap recebido as vezes é um ponteiro inválido
   DEBUG_EXPR("%p", b->bitmap );
 #ifdef BIT32
@@ -63,6 +63,9 @@ static void bupdate(struct button *b) {
   //BUG nesses casos, b->bitmap->width não está alocado
   // DEBUG_EXPR("%d", b->bitmap->width );
   if (bitmap >= 0x400000) { return; }
+#elifdef BIT64
+  uint64_t bitmap = (uint64_t)(b->bitmap) & 0xFFFFFFFFFFF00000;
+  if (bitmap >= 0x400000 && bitmap < 0x555555500000) { return; }
 #endif
   Bool invert = b->pressed && b->entered;
   GC fg = invert ? background : foreground;
@@ -88,7 +91,7 @@ static void bupdate(struct button *b) {
 static void buttonpress(struct button *b, XButtonEvent *e) {
   (void) e;
   b->pressed = True;
-  DEBUG_EXPR("%p", b->bitmap);
+  // DEBUG_EXPR("%p", b->bitmap);
   bupdate(b);
 }
 //@+node:caminhante.20240208145204.1: ** buttonrelease
@@ -96,15 +99,15 @@ static void buttonrelease(struct button *b, XButtonEvent *e) {
   if (e->button == Button1) {
     if (b->pressed && b->entered) { b->function(b->arg, e->time); }
     b->pressed = False;
-    DEBUG_EXPR("%p", b->bitmap);
+    // DEBUG_EXPR("%p", b->bitmap);
     bupdate(b);
   }
 }
 //@+node:caminhante.20240208145155.1: ** enternotify
-static void enternotify(struct button *b, XCrossingEvent *e) {
+static void enternotify (struct button *b, XCrossingEvent *e) {
   (void) e;
   b->entered = True;
-  DEBUG_EXPR("%p", b->bitmap);
+  // DEBUG_EXPR("%p", b->bitmap);
   bupdate(b);
 }
 //@+node:caminhante.20240208145149.1: ** leavenotify
@@ -112,85 +115,77 @@ static void leavenotify(struct button *b, XCrossingEvent *e) {
   (void) e;
   if (b->entered) {
     b->entered = False;
-    DEBUG_EXPR("%p", b->bitmap);
+    // DEBUG_EXPR("%p", b->bitmap);
     bupdate(b);
   }
 }
 //@+node:caminhante.20240208145142.1: ** unmapnotify
-static void unmapnotify(struct button *b, XUnmapEvent *e)
-{
-      (void) e;
-	if (b->pressed) {
-		b->pressed = False;
-            bupdate(b);
-            DEBUG_EXPR("%p", b->bitmap);
-	}
+static void unmapnotify(struct button *b, XUnmapEvent *e) {
+  (void) e;
+  if (b->pressed) {
+    b->pressed = False;
+    // DEBUG_EXPR("%p", b->bitmap);
+    bupdate(b);
+  }
 }
 //@+node:caminhante.20240208145137.1: ** expose
-static void expose(struct button *b, XExposeEvent *e)
-{
-	XCopyArea(dpy, b->pixmap, b->window, foreground,
-			e->x, e->y, e->width, e->height, e->x, e->y);
+static void expose(struct button *b, XExposeEvent *e) {
+  XCopyArea(dpy, b->pixmap, b->window, foreground,
+    e->x, e->y, e->width, e->height, e->x, e->y);
 }
 //@+node:caminhante.20240208145133.1: ** bevent
-static void bevent(void *self, XEvent *e)
-{
-	switch (e->type) {
-	case Expose:
-		expose(self, &e->xexpose);
-		break;
-	case EnterNotify:
-		enternotify(self, &e->xcrossing);
-		break;
-	case LeaveNotify:
-		leavenotify(self, &e->xcrossing);
-		break;
-	case ButtonPress:
-		buttonpress(self, &e->xbutton);
-		break;
-	case ButtonRelease:
-		buttonrelease(self, &e->xbutton);
-		break;
-	case UnmapNotify:
-		unmapnotify(self, &e->xunmap);
-		break;
-	}
+static void bevent(void *self, XEvent *e) {
+  switch (e->type) {
+  case Expose:
+    expose(self, &e->xexpose); break;
+  case EnterNotify:
+    enternotify(self, &e->xcrossing); break;
+  case LeaveNotify:
+    leavenotify(self, &e->xcrossing); break;
+  case ButtonPress:
+    buttonpress(self, &e->xbutton); break;
+  case ButtonRelease:
+    buttonrelease(self, &e->xbutton); break;
+  case UnmapNotify:
+    unmapnotify(self, &e->xunmap); break;
+  }
 }
 //@+node:caminhante.20240208145126.1: ** bcreate
-struct button *bcreate(void (*function)(void *, Time),
-		void *arg, struct bitmap *bitmap,
-		Window parent, int x, int y, int width,
-		int height, int gravity)
-{
-	struct button *b = xmalloc(sizeof *b);
-	b->function = function;
-	b->arg = arg;
-      DEBUG_EXPR("%p", bitmap);
-      DEBUG_EXPR("%d", bitmap->width);
-	b->bitmap = bitmap;
-	b->width = width;
-	b->height = height;
-	b->pixmap = XCreatePixmap(dpy, root, width, height,
-			DefaultDepth(dpy, scr));
-	b->pressed = False;
-	b->entered = False;
-	b->window = XCreateWindow(dpy, parent, x, y, width, height, 0,
-			CopyFromParent, InputOutput, CopyFromParent,
-			CWWinGravity,
-			&(XSetWindowAttributes){
-				.win_gravity = gravity });
-	b->listener.function = bevent;
-	b->listener.pointer = b;
-	setlistener(b->window, &b->listener);
-	XGrabButton(dpy, Button1, AnyModifier, b->window, False,
-			EnterWindowMask | LeaveWindowMask | ButtonReleaseMask,
-			GrabModeAsync, GrabModeAsync, None, None);
-	XSelectInput(dpy, b->window,
-			EnterWindowMask | LeaveWindowMask |
-			StructureNotifyMask | ExposureMask);
-	bupdate(b);
-	XMapWindow(dpy, b->window);
-	return b;
+struct button *bcreate(
+  void (*function)(void *, Time),
+  void *arg, struct bitmap *bitmap,
+  Window parent, int x, int y, int width,
+  int height, int gravity
+) {
+  struct button *b = xmalloc(sizeof *b);
+  b->function = function;
+  b->arg = arg;
+  // DEBUG_EXPR("%p", bitmap);
+  // DEBUG_EXPR("%d", bitmap->width);
+  b->bitmap = bitmap;
+  b->width = width;
+  b->height = height;
+  b->pixmap = XCreatePixmap(dpy, root, width, height,
+    DefaultDepth(dpy, scr));
+  b->pressed = False;
+  b->entered = False;
+  b->window = XCreateWindow(dpy, parent, x, y, width, height, 0,
+    CopyFromParent, InputOutput, CopyFromParent,
+    CWWinGravity,
+    &(XSetWindowAttributes){
+      .win_gravity = gravity });
+  b->listener.function = bevent;
+  b->listener.pointer = b;
+  setlistener(b->window, &b->listener);
+  XGrabButton(dpy, Button1, AnyModifier, b->window, False,
+    EnterWindowMask | LeaveWindowMask | ButtonReleaseMask,
+    GrabModeAsync, GrabModeAsync, None, None);
+  XSelectInput(dpy, b->window,
+    EnterWindowMask | LeaveWindowMask |
+    StructureNotifyMask | ExposureMask);
+  bupdate(b);
+  XMapWindow(dpy, b->window);
+  return b;
 }
 //@+node:caminhante.20240208145120.1: ** bdestroy
 void bdestroy(struct button *b)

@@ -79,6 +79,7 @@ static void resizetopright(void *, int, int, unsigned long, Time);
 static size_t fcount;
 static Cursor cursortopleft = None;
 static Cursor cursortopright = None;
+static Cursor cursorclose = None;
 //@+node:caminhante.20240208160251.1: ** estimateframeextents
 /*
  * XXX: We cheat here and always estimate normal frame
@@ -380,6 +381,8 @@ struct frame *fcreate(struct client *c)
 	if (fcount == 0) {
 		cursortopleft = XCreateFontCursor(dpy, XC_top_left_corner);
 		cursortopright = XCreateFontCursor(dpy, XC_top_right_corner);
+    //NOTE https://tronche.com/gui/x/xlib/appendix/b/
+              cursorclose = XCreateFontCursor(dpy, XC_pirate);
 	}
 	fcount++;
 
@@ -441,8 +444,8 @@ struct frame *fcreate(struct client *c)
 
 	XSetWindowBorderWidth(dpy, clientwin, 0);
 	setgrav(clientwin, NorthWestGravity);
-	if (cismapped(f->client))
-		cignoreunmap(f->client);
+	if (cismapped(f->client)) {
+		cignoreunmap(f->client); }
 	XReparentWindow(dpy, clientwin, f->window, EXT_LEFT, EXT_TOP);
 
 	g.x += EXT_LEFT;
@@ -458,8 +461,8 @@ struct frame *fcreate(struct client *c)
 
 	fupdate(f);
 
-	if (cismapped(f->client))
-		XMapWindow(dpy, f->window);
+	if (cismapped(f->client)) {
+		XMapWindow(dpy, f->window); }
 	return f;
 }
 //@+node:caminhante.20240208160123.1: ** fdestroy
@@ -496,10 +499,10 @@ void fdestroy(struct frame *f)
 	setlistener(f->window, NULL);
 	ddestroy(f->topleftresizer);
 	ddestroy(f->toprightresizer);
-	if (f->deletebutton != NULL)
-		bdestroy(f->deletebutton);
-	if (f->pixmap != None)
-		XFreePixmap(dpy, f->pixmap);
+	if (f->deletebutton != NULL) {
+		bdestroy(f->deletebutton); }
+	if (f->pixmap != None) {
+		XFreePixmap(dpy, f->pixmap); }
 	XDestroyWindow(dpy, f->window);
 	free(f);
 
@@ -508,6 +511,7 @@ void fdestroy(struct frame *f)
 	if (fcount == 0) {
 		XFreeCursor(dpy, cursortopleft);
 		XFreeCursor(dpy, cursortopright);
+              XFreeCursor(dpy, cursorclose);
 	}
 }
 //@+node:caminhante.20240208160113.1: ** fgetwin
