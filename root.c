@@ -102,7 +102,7 @@ static void rrun_command (KeySym keysym, unsigned state, Time time, int arg) {
     puts("rrun_command: no command was specified as alt+tab run command");
     return; }
 
-  printf("keypress_run: running");
+  printf("running command");
   for (size_t argc=0; argc<call_argc; argc++) {
     printf(" %s", call_argv[argc]); }
   putchar(10);
