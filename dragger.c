@@ -39,7 +39,7 @@ struct dragger {
 };
 
 static void event(void *, XEvent *);
-static void buttonpress(struct dragger *, XButtonEvent *);
+static void buttonpress3(struct dragger *, XButtonEvent *);
 static void motionnotify(struct dragger *, XMotionEvent *);
 
 struct dragger *dcreate(Window parent, int x, int y,
@@ -126,12 +126,12 @@ static void event(void *self, XEvent *e)
 		motionnotify(self, &e->xmotion);
 		break;
 	case ButtonPress:
-		buttonpress(self, &e->xbutton);
+		buttonpress3(self, &e->xbutton);
 		break;
 	}
 }
 
-static void buttonpress(struct dragger *d, XButtonEvent *e)
+static void buttonpress3(struct dragger *d, XButtonEvent *e)
 {
 	d->counter = 0;
 	d->x = e->x - d->x0;

@@ -1,3 +1,9 @@
+//@+leo-ver=5-thin
+//@+node:caminhante.20240208143459.18: * @file frame.c
+//@@tabwidth -2
+//@@language c
+//@+others
+//@+node:caminhante.20240208160330.1: ** /sobre
 /*
  * Copyright 2010 Johan Veenhuizen
  *
@@ -19,7 +25,7 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-
+//@+node:caminhante.20240208160322.1: ** /includes
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,12 +34,12 @@
 #include <X11/cursorfont.h>
 
 #include "wind.h"
-
+//@+node:caminhante.20240208160318.1: ** /macros
 #define EXT_TOP (lineheight + 2)
 #define EXT_BOTTOM (halfleading + 1)
 #define EXT_LEFT (halfleading + 1)
 #define EXT_RIGHT (halfleading + 1)
-
+//@+node:caminhante.20240208160313.1: ** struct frame
 struct frame {
 	struct listener listener;
 	struct client *client;
@@ -52,27 +58,27 @@ struct frame {
 	int downy;	// window relative pointer y at button press
 	Bool grabbed;
 };
-
+//@+node:caminhante.20240208160307.1: ** /protótipos
 static void reorder(Window, Window);
 static void setgrav(Window, int);
 static void gravitate(int, int, int *, int *);
 static void confrequest(struct frame *, XConfigureRequestEvent *);
 static void repaint(struct frame *);
-static void buttonpress(struct frame *, XButtonEvent *);
-static void buttonrelease(struct frame *, XButtonEvent *);
+static void fbuttonpress(struct frame *, XButtonEvent *);
+static void fbuttonrelease(struct frame *, XButtonEvent *);
 static void moveresize(struct frame *, int, int, int, int);
-static void motionnotify(struct frame *, XMotionEvent*);
-static void maprequest(struct frame *, XMapRequestEvent *);
-static void expose(struct frame *, XExposeEvent *);
-static void event(void *, XEvent *);
+static void fmotionnotify(struct frame *, XMotionEvent*);
+static void fmaprequest(struct frame *, XMapRequestEvent *);
+static void fexpose(struct frame *, XExposeEvent *);
+static void fevent(void *, XEvent *);
 static void delete(void *, Time);
 static void resizetopleft(void *, int, int, unsigned long, Time);
 static void resizetopright(void *, int, int, unsigned long, Time);
-
+//@+node:caminhante.20240208160301.1: ** /variáveis
 static size_t fcount;
 static Cursor cursortopleft = None;
 static Cursor cursortopright = None;
-
+//@+node:caminhante.20240208160251.1: ** estimateframeextents
 /*
  * XXX: We cheat here and always estimate normal frame
  * extents, even if the window is of a type that will
@@ -82,24 +88,25 @@ static Cursor cursortopright = None;
  */
 struct extents estimateframeextents(Window w)
 {
+      (void) w;
 	return (struct extents){
 			.top = EXT_TOP,
 			.bottom = EXT_BOTTOM,
 			.left = EXT_LEFT,
 			.right = EXT_RIGHT };
 }
-
+//@+node:caminhante.20240208160244.1: ** reorder
 static void reorder(Window ref, Window below)
 {
 	XRestackWindows(dpy, (Window[]){ ref, below }, 2);
 }
-
+//@+node:caminhante.20240208160240.1: ** setgrav
 static void setgrav(Window win, int grav)
 {
 	XChangeWindowAttributes(dpy, win, CWWinGravity,
 			&(XSetWindowAttributes){ .win_gravity = grav });
 }
-
+//@+node:caminhante.20240208160235.1: ** gravitate
 static void gravitate(int wingrav, int borderwidth, int *dx, int *dy)
 {
 	switch (wingrav) {
@@ -154,7 +161,7 @@ static void gravitate(int wingrav, int borderwidth, int *dx, int *dy)
 		break;
 	}
 }
-
+//@+node:caminhante.20240208160225.1: ** fupdate
 void fupdate(struct frame *f)
 {
 	if (chaswmproto(f->client, WM_DELETE_WINDOW)) {
@@ -197,7 +204,7 @@ void fupdate(struct frame *f)
 
 	repaint(f);
 }
-
+//@+node:caminhante.20240208160219.1: ** repaint
 static void repaint(struct frame *f)
 {
 	int namewidth = f->namewidth;
@@ -234,7 +241,7 @@ static void repaint(struct frame *f)
 	XFillRectangle(dpy, f->window, *f->background,
 			f->width - EXT_RIGHT, EXT_TOP - 1, EXT_RIGHT - 1, 1);
 }
-
+//@+node:caminhante.20240208160213.1: ** confrequest
 static void confrequest(struct frame *f, XConfigureRequestEvent *e)
 {
 	struct geometry g = cgetgeom(f->client);
@@ -265,8 +272,8 @@ static void confrequest(struct frame *f, XConfigureRequestEvent *e)
 
 	moveresize(f, x, y, width, height);
 }
-
-static void buttonpress(struct frame *f, XButtonEvent *e)
+//@+node:caminhante.20240208160207.1: ** fbuttonpress
+static void fbuttonpress(struct frame *f, XButtonEvent *e)
 {
 	if (e->button == Button1) {
 		cpopapp(f->client);
@@ -284,8 +291,8 @@ static void buttonpress(struct frame *f, XButtonEvent *e)
 		}
 	}
 }
-
-static void buttonrelease(struct frame *f, XButtonEvent *e)
+//@+node:caminhante.20240208160202.1: ** fbuttonrelease
+static void fbuttonrelease(struct frame *f, XButtonEvent *e)
 {
 	if (e->button == Button1 && f->grabbed) {
 		XUngrabPointer(dpy, e->time);
@@ -293,7 +300,7 @@ static void buttonrelease(struct frame *f, XButtonEvent *e)
 		f->grabbed = False;
 	}
 }
-
+//@+node:caminhante.20240208160158.1: ** moveresize
 /*
  * Move and resize the frame, and update the client window.
  */
@@ -323,50 +330,50 @@ static void moveresize(struct frame *f, int x, int y, int w, int h)
 	else
 		XResizeWindow(dpy, cgetwin(f->client), new.width, new.height);
 }
-
-static void motionnotify(struct frame *f, XMotionEvent *e)
+//@+node:caminhante.20240208160151.1: ** fmotionnotify
+static void fmotionnotify(struct frame *f, XMotionEvent *e)
 {
 	moveresize(f, e->x_root - f->downx, e->y_root - f->downy,
 			f->width, f->height);
 }
-
-static void maprequest(struct frame *f, XMapRequestEvent *e)
+//@+node:caminhante.20240208160146.1: ** fmaprequest
+static void fmaprequest(struct frame *f, XMapRequestEvent *e)
 {
 	Window win = cgetwin(f->client);
 	if (e->window == win)
 		redirect((XEvent *)e, win);
 }
-
-static void expose(struct frame *f, XExposeEvent *e)
+//@+node:caminhante.20240208160140.1: ** fexpose
+static void fexpose(struct frame *f, XExposeEvent *e)
 {
 	if (e->count == 0)
 		repaint(f);
 }
-
-static void event(void *self, XEvent *e)
+//@+node:caminhante.20240208160136.1: ** fevent
+static void fevent(void *self, XEvent *e)
 {
 	switch (e->type) {
 	case Expose:
-		expose(self, &e->xexpose);
+		fexpose(self, &e->xexpose);
 		break;
 	case MotionNotify:
-		motionnotify(self, &e->xmotion);
+		fmotionnotify(self, &e->xmotion);
 		break;
 	case ButtonPress:
-		buttonpress(self, &e->xbutton);
+		fbuttonpress(self, &e->xbutton);
 		break;
 	case ButtonRelease:
-		buttonrelease(self, &e->xbutton);
+		fbuttonrelease(self, &e->xbutton);
 		break;
 	case ConfigureRequest:
 		confrequest(self, &e->xconfigurerequest);
 		break;
 	case MapRequest:
-		maprequest(self, &e->xmaprequest);
+		fmaprequest(self, &e->xmaprequest);
 		break;
 	}
 }
-
+//@+node:caminhante.20240208160131.1: ** frame
 struct frame *fcreate(struct client *c)
 {
 	if (fcount == 0) {
@@ -401,7 +408,7 @@ struct frame *fcreate(struct client *c)
 
 	reorder(clientwin, f->window);
 
-	f->listener.function = event;
+	f->listener.function = fevent;
 	f->listener.pointer = f;
 	setlistener(f->window, &f->listener);
 
@@ -454,7 +461,7 @@ struct frame *fcreate(struct client *c)
 		XMapWindow(dpy, f->window);
 	return f;
 }
-
+//@+node:caminhante.20240208160123.1: ** fdestroy
 void fdestroy(struct frame *f)
 {
 	Bool hadfocus = chasfocus(f->client);
@@ -502,12 +509,12 @@ void fdestroy(struct frame *f)
 		XFreeCursor(dpy, cursortopright);
 	}
 }
-
+//@+node:caminhante.20240208160113.1: ** fgetwin
 Window fgetwin(struct frame *f)
 {
 	return f->window;
 }
-
+//@+node:caminhante.20240208160106.1: ** fgetgeom
 struct geometry fgetgeom(struct frame *f)
 {
 	return (struct geometry){
@@ -517,12 +524,12 @@ struct geometry fgetgeom(struct frame *f)
 			.height = f->height,
 			.borderwidth = 0 };
 }
-
+//@+node:caminhante.20240208160100.1: ** delete
 static void delete(void *client, Time t)
 {
 	cdelete(client, t);
 }
-
+//@+node:caminhante.20240208160052.1: ** resizetopleft
 static void resizetopleft(void *self, int xdrag, int ydrag,
 		unsigned long counter, Time t)
 {
@@ -545,7 +552,7 @@ static void resizetopleft(void *self, int xdrag, int ydrag,
 	}
 	moveresize(f, x, y, w, h);
 }
-
+//@+node:caminhante.20240208160043.1: ** resizetopright
 static void resizetopright(void *self, int xdrag, int ydrag,
 		unsigned long counter, Time t)
 {
@@ -568,3 +575,5 @@ static void resizetopright(void *self, int xdrag, int ydrag,
 	}
 	moveresize(f, x, y, w, h);
 }
+//@-others
+//@-leo

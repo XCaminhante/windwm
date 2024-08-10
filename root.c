@@ -1,3 +1,9 @@
+//@+leo-ver=5-thin
+//@+node:caminhante.20240208143459.7: * @file root.c
+//@@tabwidth -2
+//@@language c
+//@+others
+//@+node:caminhante.20240208161500.1: ** /sobre
 /*
  * Copyright 2010 Johan Veenhuizen
  *
@@ -19,74 +25,75 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-
+//@+node:caminhante.20240208161456.1: ** /includes
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
 
 #include "wind.h"
-
+//@+node:caminhante.20240208161452.1: ** /protótipos
 static void fnkey(KeySym, unsigned, Time, int);
-static void configurerequest(XConfigureRequestEvent *);
-static void maprequest(XMapRequestEvent *);
-static void keypress(XKeyEvent *);
-static void clientmessage(XClientMessageEvent *);
-static void unmapnotify(XUnmapEvent *);
-static void enternotify(XCrossingEvent *);
-static void leavenotify(XCrossingEvent *);
-static void event(void *, XEvent *);
-
+static void rconfigurerequest(XConfigureRequestEvent *);
+static void rmaprequest(XMapRequestEvent *);
+static void rkeypress(XKeyEvent *);
+static void rclientmessage(XClientMessageEvent *);
+static void runmapnotify(XUnmapEvent *);
+static void renternotify(XCrossingEvent *);
+static void rleavenotify(XCrossingEvent *);
+static void revent(void *, XEvent *);
+//@+node:caminhante.20240208161447.1: ** /variáveis
 // True if the pointer is on this screen
 static Bool pointerhere;
 
 static const struct listener listener = {
-	.function = event,
+	.function = revent,
 	.pointer = NULL,
 };
-
+//@+node:caminhante.20240208161429.1: ** struct keybind rkeymap[]
 static struct keybind {
 	KeySym keysym;
 	unsigned modifiers;
 	void (*function)(KeySym key, unsigned state, Time t, int arg);
 	int arg;
 	KeyCode keycode;
-} keymap[] = {
-	{ XK_F1, Mod1Mask, fnkey, 1 },
-	{ XK_F2, Mod1Mask, fnkey, 2 },
-	{ XK_F3, Mod1Mask, fnkey, 3 },
-	{ XK_F4, Mod1Mask, fnkey, 4 },
-	{ XK_F5, Mod1Mask, fnkey, 5 },
-	{ XK_F6, Mod1Mask, fnkey, 6 },
-	{ XK_F7, Mod1Mask, fnkey, 7 },
-	{ XK_F8, Mod1Mask, fnkey, 8 },
-	{ XK_F9, Mod1Mask, fnkey, 9 },
-	{ XK_F10, Mod1Mask, fnkey, 10 },
-	{ XK_F11, Mod1Mask, fnkey, 11 },
-	{ XK_F12, Mod1Mask, fnkey, 12 },
+} rkeymap[] = {
+	{ XK_F1, Mod1Mask, fnkey, 1, 0 },
+	{ XK_F2, Mod1Mask, fnkey, 2, 0 },
+	{ XK_F3, Mod1Mask, fnkey, 3, 0 },
+	{ XK_F4, Mod1Mask, fnkey, 4, 0 },
+	{ XK_F5, Mod1Mask, fnkey, 5, 0 },
+	{ XK_F6, Mod1Mask, fnkey, 6, 0 },
+	{ XK_F7, Mod1Mask, fnkey, 7, 0 },
+	{ XK_F8, Mod1Mask, fnkey, 8, 0 },
+	{ XK_F9, Mod1Mask, fnkey, 9, 0 },
+	{ XK_F10, Mod1Mask, fnkey, 10, 0 },
+	{ XK_F11, Mod1Mask, fnkey, 11, 0 },
+	{ XK_F12, Mod1Mask, fnkey, 12, 0 },
 
-	{ XK_F1, ShiftMask | Mod1Mask, fnkey, 1 },
-	{ XK_F2, ShiftMask | Mod1Mask, fnkey, 2 },
-	{ XK_F3, ShiftMask | Mod1Mask, fnkey, 3 },
-	{ XK_F4, ShiftMask | Mod1Mask, fnkey, 4 },
-	{ XK_F5, ShiftMask | Mod1Mask, fnkey, 5 },
-	{ XK_F6, ShiftMask | Mod1Mask, fnkey, 6 },
-	{ XK_F7, ShiftMask | Mod1Mask, fnkey, 7 },
-	{ XK_F8, ShiftMask | Mod1Mask, fnkey, 8 },
-	{ XK_F9, ShiftMask | Mod1Mask, fnkey, 9 },
-	{ XK_F10, ShiftMask | Mod1Mask, fnkey, 10 },
-	{ XK_F11, ShiftMask | Mod1Mask, fnkey, 11 },
-	{ XK_F12, ShiftMask | Mod1Mask, fnkey, 12 },
+	{ XK_F1, ShiftMask | Mod1Mask, fnkey, 1, 0 },
+	{ XK_F2, ShiftMask | Mod1Mask, fnkey, 2, 0 },
+	{ XK_F3, ShiftMask | Mod1Mask, fnkey, 3, 0 },
+	{ XK_F4, ShiftMask | Mod1Mask, fnkey, 4, 0 },
+	{ XK_F5, ShiftMask | Mod1Mask, fnkey, 5, 0 },
+	{ XK_F6, ShiftMask | Mod1Mask, fnkey, 6, 0 },
+	{ XK_F7, ShiftMask | Mod1Mask, fnkey, 7, 0 },
+	{ XK_F8, ShiftMask | Mod1Mask, fnkey, 8, 0 },
+	{ XK_F9, ShiftMask | Mod1Mask, fnkey, 9, 0 },
+	{ XK_F10, ShiftMask | Mod1Mask, fnkey, 10, 0 },
+	{ XK_F11, ShiftMask | Mod1Mask, fnkey, 11, 0 },
+	{ XK_F12, ShiftMask | Mod1Mask, fnkey, 12, 0 },
 };
-
+//@+node:caminhante.20240208161407.1: ** fnkey
 static void fnkey(KeySym keysym, unsigned state, Time time, int arg)
 {
-	if (state & ShiftMask)
-		setndesk(arg);
+      (void) keysym;
+	if (state & ShiftMask) {
+		setndesk(arg); }
 	gotodesk(arg - 1);
 	refocus(time);
 }
-
-static void configurerequest(XConfigureRequestEvent *e)
+//@+node:caminhante.20240208161402.1: ** rconfigurerequest
+static void rconfigurerequest(XConfigureRequestEvent *e)
 {
 	// First try to redirect the event.
 	if (redirect((XEvent *)e, e->window) == 0)
@@ -108,49 +115,49 @@ static void configurerequest(XConfigureRequestEvent *e)
 				.sibling = e->above,
 				.stack_mode = e->detail });
 }
-
-static void maprequest(XMapRequestEvent *e)
+//@+node:caminhante.20240208161355.1: ** rmaprequest
+static void rmaprequest(XMapRequestEvent *e)
 {
 	// Already managed?
-	if (redirect((XEvent *)e, e->window) == 0)
-		return;
+	if (redirect((XEvent *)e, e->window) == 0) {
+		return; }
 
 	// Try to manage it, otherwise just map it.
-	if (manage(e->window) == NULL)
-		XMapWindow(dpy, e->window);
+	if (manage(e->window) == NULL) {
+		XMapWindow(dpy, e->window); }
 }
-
-static void keypress(XKeyEvent *e)
+//@+node:caminhante.20240208161347.1: ** rkeypress
+static void rkeypress(XKeyEvent *e)
 {
-	for (int i = 0; i < NELEM(keymap); i++)
-		if (keymap[i].keycode == e->keycode) {
-			keymap[i].function(keymap[i].keysym, e->state,
-					e->time, keymap[i].arg);
+	for (size_t i = 0; i < NELEM(rkeymap); i++) {
+		if (rkeymap[i].keycode == e->keycode) {
+			rkeymap[i].function(rkeymap[i].keysym, e->state,
+					e->time, rkeymap[i].arg);
 			break;
-		}
+		} }
 }
-
-static void clientmessage(XClientMessageEvent *e)
+//@+node:caminhante.20240208161343.1: ** rclientmessage
+static void rclientmessage(XClientMessageEvent *e)
 {
 	ewmh_rootclientmessage(e);
 }
-
+//@+node:caminhante.20240208161337.1: ** runmapnotify
 /*
  * Refer to the ICCCM section 4.1.4, "Changing Window State",
  * for information on the synthetic UnmapNotify event sent
  * by clients to the root window on withdrawal.
  */
-static void unmapnotify(XUnmapEvent *e)
+static void runmapnotify(XUnmapEvent *e)
 {
-	if (e->send_event)
-		redirect((XEvent *)e, e->window);
+	if (e->send_event) {
+		redirect((XEvent *)e, e->window); }
 }
-
+//@+node:caminhante.20240208161329.1: ** renternotify
 /*
  * Refocus whenever the pointer enters our root window from
  * another screen.
  */
-static void enternotify(XCrossingEvent *e)
+static void renternotify(XCrossingEvent *e)
 {
 	if (e->detail == NotifyNonlinear ||
 			e->detail == NotifyNonlinearVirtual) {
@@ -158,11 +165,11 @@ static void enternotify(XCrossingEvent *e)
 		refocus(e->time);
 	}
 }
-
+//@+node:caminhante.20240208161323.1: ** rleavenotify
 /*
  * Give up focus if the pointer leaves our screen.
  */
-static void leavenotify(XCrossingEvent *e)
+static void rleavenotify(XCrossingEvent *e)
 {
 	if (e->detail == NotifyNonlinear ||
 			e->detail == NotifyNonlinearVirtual) {
@@ -170,34 +177,35 @@ static void leavenotify(XCrossingEvent *e)
 		XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, e->time);
 	}
 }
-
-static void event(void *self, XEvent *e)
+//@+node:caminhante.20240208161243.1: ** revent
+static void revent(void *self, XEvent *e)
 {
+      (void) self;
 	switch (e->type) {
 	case MapRequest:
-		maprequest(&e->xmaprequest);
+		rmaprequest(&e->xmaprequest);
 		break;
 	case ConfigureRequest:
-		configurerequest(&e->xconfigurerequest);
+		rconfigurerequest(&e->xconfigurerequest);
 		break;
 	case KeyPress:
-		keypress(&e->xkey);
+		rkeypress(&e->xkey);
 		break;
 	case ClientMessage:
-		clientmessage(&e->xclient);
+		rclientmessage(&e->xclient);
 		break;
 	case UnmapNotify:
-		unmapnotify(&e->xunmap);
+		runmapnotify(&e->xunmap);
 		break;
 	case EnterNotify:
-		enternotify(&e->xcrossing);
+		renternotify(&e->xcrossing);
 		break;
 	case LeaveNotify:
-		leavenotify(&e->xcrossing);
+		rleavenotify(&e->xcrossing);
 		break;
 	}
 }
-
+//@+node:caminhante.20240208161227.1: ** initroot
 void initroot(void)
 {
 	setlistener(root, &listener);
@@ -216,8 +224,8 @@ void initroot(void)
 		exit(1);
 	}
 
-	for (int i = 0; i < NELEM(keymap); i++) {
-		struct keybind *k = &keymap[i];
+	for (size_t i = 0; i < NELEM(rkeymap); i++) {
+		struct keybind *k = &rkeymap[i];
 		k->keycode = XKeysymToKeycode(dpy, k->keysym);
 		grabkey(k->keycode, k->modifiers, root, True,
 				GrabModeAsync, GrabModeAsync);
@@ -229,3 +237,5 @@ void initroot(void)
 	XQueryPointer(dpy, root, &r, &c, &rx, &ry, &x, &y, &m);
 	pointerhere = (r == root);
 }
+//@-others
+//@-leo

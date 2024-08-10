@@ -1,3 +1,9 @@
+//@+leo-ver=5-thin
+//@+node:caminhante.20240208143459.3: * @file x11font.c
+//@@tabwidth -2
+//@@language c
+//@+others
+//@+node:caminhante.20240208163417.1: ** /sobre
 /*
  * Copyright 2010 Johan Veenhuizen
  *
@@ -19,19 +25,20 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-
+//@+node:caminhante.20240208163411.1: ** /includes
 #include <X11/Xlib.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "wind.h"
-
+//@+node:caminhante.20240208163349.1: ** /macros
+#undef DEFAULT
 #define DEFAULT "-*-helvetica-medium-r-*-*-12-*-*-*-*-*-*-*"
-
+//@+node:caminhante.20240208163346.1: ** struct fontcolor
 struct fontcolor {
 	GC gc;
 };
-
+//@+node:caminhante.20240208163340.1: ** ftload
 struct font *ftload(const char *name)
 {
 	XFontSet fontset = NULL;
@@ -56,7 +63,7 @@ struct font *ftload(const char *name)
 
 	if (missingcharsetlist != NULL)
 		XFreeStringList(missingcharsetlist);
- 
+
 	if (fontset == NULL)
 		return NULL;
 
@@ -69,13 +76,13 @@ struct font *ftload(const char *name)
 	f->size = f->ascent + f->descent;
 	return f;
 }
-
+//@+node:caminhante.20240208163331.1: ** ftfree
 void ftfree(struct font *f)
 {
 	XFreeFontSet(dpy, f->data);
 	free(f);
 }
-
+//@+node:caminhante.20240208163326.1: ** ftloadcolor
 struct fontcolor *ftloadcolor(const char *name)
 {
 	unsigned long pixel = getpixel(name);
@@ -84,20 +91,20 @@ struct fontcolor *ftloadcolor(const char *name)
 			&(XGCValues){ .foreground = pixel });
 	return c;
 }
-
+//@+node:caminhante.20240208163321.1: ** ftfreecolor
 void ftfreecolor(struct fontcolor *c)
 {
 	XFreeGC(dpy, c->gc);
 	free(c);
 }
-
+//@+node:caminhante.20240208163316.1: ** ftdrawstring
 void ftdrawstring(Drawable d, struct font *f, struct fontcolor *c,
 		int x, int y, const char *s)
 {
 	XFontSet fontset = f->data;
 	XmbDrawString(dpy, d, fontset, c->gc, x, y, s, strlen(s));
 }
-
+//@+node:caminhante.20240208163256.1: ** ftdrawstring_utf8
 void ftdrawstring_utf8(Drawable d, struct font *f, struct fontcolor *c,
 		int x, int y, const char *s)
 {
@@ -109,7 +116,7 @@ void ftdrawstring_utf8(Drawable d, struct font *f, struct fontcolor *c,
 	ftdrawstring(d, f, c, x, y, s);
 #endif
 }
-
+//@+node:caminhante.20240208163246.1: ** fttextwidth
 int fttextwidth(struct font *f, const char *s)
 {
 	XRectangle r = { .x = 0, .y = 0, .width = 0, .height = 0 };
@@ -117,7 +124,7 @@ int fttextwidth(struct font *f, const char *s)
 	XmbTextExtents(fontset, s, strlen(s), &r, NULL);
 	return r.x + r.width;
 }
-
+//@+node:caminhante.20240208163242.1: ** fttextwidth_utf8
 int fttextwidth_utf8(struct font *f, const char *s)
 {
 #ifdef X_HAVE_UTF8_STRING
@@ -130,3 +137,5 @@ int fttextwidth_utf8(struct font *f, const char *s)
 	return fttextwidth(f, s);
 #endif
 }
+//@-others
+//@-leo

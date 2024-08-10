@@ -211,7 +211,7 @@ Bool ismapped(Window);
 char *decodetextproperty(XTextProperty *);
 void setprop(Window, Atom, Atom, int, void *, int);
 void *getprop(Window, Atom, Atom, int, unsigned long *);
-void drawbitmap(Drawable, GC, struct bitmap *, int, int);
+void drawbitmap(Drawable, GC, struct bitmap *, size_t, size_t);
 unsigned long getpixel(const char *);
 
 #endif

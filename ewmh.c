@@ -1,3 +1,9 @@
+//@+leo-ver=5-thin
+//@+node:caminhante.20240208143459.20: * @file ewmh.c
+//@@tabwidth -2
+//@@language c
+//@+others
+//@+node:caminhante.20240208155529.1: ** /sobre
 /*
  * Copyright 2010 Johan Veenhuizen
  *
@@ -19,7 +25,7 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-
+//@+node:caminhante.20240208155524.1: ** /includes
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,7 +33,7 @@
 #include <X11/Xlib.h>
 
 #include "wind.h"
-
+//@+node:caminhante.20240208155518.1: ** /macros
 #define DEFAULT_NUMBER_OF_DESKTOPS 12
 
 #define xatom(name) XInternAtom(dpy, (name), False)
@@ -35,7 +41,7 @@
 #define NET_WM_STATE_REMOVE 0
 #define NET_WM_STATE_ADD 1
 #define NET_WM_STATE_TOGGLE 2
-
+//@+node:caminhante.20240208155509.1: ** /protótipos
 static void addclient(Window);
 static void delclient(Window);
 static unsigned long ewmh_getndesktops(void);
@@ -48,7 +54,7 @@ static Bool hasstate(Window, Atom);
 static void removestate(Window, Atom);
 static void addstate(Window, Atom);
 static void changestate(Window, int, Atom);
-
+//@+node:caminhante.20240208155501.1: ** /propriedades suportadas
 /*
  * The list of supported properties. Note that we need to
  * include some properties that we actually never use in
@@ -93,29 +99,29 @@ static Atom NET_WORKAREA;
 static Atom UTF8_STRING;
 
 static Window wmcheckwin = None;
-
+//@+node:caminhante.20240208155442.1: ** struct clientlist
 static struct {
 	Window *v;
 	size_t n;
 	size_t lim;
 } clientlist = { NULL, 0, 0 };
-
+//@+node:caminhante.20240208155409.1: ** ewmh_notifyclientdesktop
 void ewmh_notifyclientdesktop(Window w, unsigned long i)
 {
 	setprop(w, NET_WM_DESKTOP, XA_CARDINAL, 32, &i, 1);
 }
-
+//@+node:caminhante.20240208155405.1: ** ewmh_notifycurdesk
 void ewmh_notifycurdesk(unsigned long n)
 {
 	setprop(root, NET_CURRENT_DESKTOP, XA_CARDINAL, 32, &n, 1);
 }
-
+//@+node:caminhante.20240208155400.1: ** ewmh_notifyframeextents
 void ewmh_notifyframeextents(Window w, struct extents e)
 {
 	unsigned long v[4] = { e.left, e.right, e.top, e.bottom };
 	setprop(w, NET_FRAME_EXTENTS, XA_CARDINAL, 32, v, NELEM(v));
 }
-
+//@+node:caminhante.20240208155355.1: ** addclient
 static void addclient(Window w)
 {
 	if (clientlist.n == clientlist.lim) {
@@ -127,26 +133,23 @@ static void addclient(Window w)
 	setprop(root, NET_CLIENT_LIST, XA_WINDOW, 32,
 			clientlist.v, clientlist.n);
 }
-
+//@+node:caminhante.20240208155351.1: ** delclient
 static void delclient(Window w)
 {
-	int i;
-	for (i = 0; i < clientlist.n && clientlist.v[i] != w; i++)
-		;
+	size_t i;
+	for (i = 0; i < clientlist.n && clientlist.v[i] != w; i++) {}
 	if (i < clientlist.n) {
-		for (; i < clientlist.n - 1; i++)
-			clientlist.v[i] = clientlist.v[i + 1];
+		for (; i < clientlist.n - 1; i++) { clientlist.v[i] = clientlist.v[i + 1]; }
 		clientlist.n--;
 	}
-	setprop(root, NET_CLIENT_LIST, XA_WINDOW, 32,
-			clientlist.v, clientlist.n);
+	setprop(root, NET_CLIENT_LIST, XA_WINDOW, 32, clientlist.v, clientlist.n);
 	if (clientlist.n == 0) {
 		free(clientlist.v);
 		clientlist.v = NULL;
 		clientlist.lim = 0;
 	}
 }
-
+//@+node:caminhante.20240208155346.1: ** ewmh_getndesktops
 static unsigned long ewmh_getndesktops(void)
 {
 	unsigned long ndesk = DEFAULT_NUMBER_OF_DESKTOPS;
@@ -160,7 +163,7 @@ static unsigned long ewmh_getndesktops(void)
 	}
 	return ndesk;
 }
-
+//@+node:caminhante.20240208155340.1: ** ewmh_notifyndesk
 void ewmh_notifyndesk(unsigned long n)
 {
 	long *viewport = xmalloc(n * 2 * sizeof (long));
@@ -181,12 +184,12 @@ void ewmh_notifyndesk(unsigned long n)
 
 	setprop(root, NET_NUMBER_OF_DESKTOPS, XA_CARDINAL, 32, &n, 1);
 }
-
+//@+node:caminhante.20240208155334.1: ** setcurrentdesktop
 static void setcurrentdesktop(unsigned long i)
 {
 	setprop(root, NET_CURRENT_DESKTOP, XA_CARDINAL, 32, &i, 1);
 }
-
+//@+node:caminhante.20240208155327.1: ** ewmh_startwm
 void ewmh_startwm(void)
 {
 	UTF8_STRING = xatom("UTF8_STRING");
@@ -260,12 +263,12 @@ void ewmh_startwm(void)
 	setprop(root, NET_SUPPORTING_WM_CHECK, XA_WINDOW, 32,
 			&wmcheckwin, 1);
 }
-
+//@+node:caminhante.20240208155315.1: ** ewmh_stopwm
 void ewmh_stopwm(void)
 {
 	XDestroyWindow(dpy, wmcheckwin);
 }
-
+//@+node:caminhante.20240208155310.1: ** reloadwindowname
 static void reloadwindowname(struct client *c)
 {
 	unsigned long n = 0;
@@ -274,7 +277,7 @@ static void reloadwindowname(struct client *c)
 	if (name != NULL)
 		XFree(name);
 }
-
+//@+node:caminhante.20240208155304.1: ** reloadwindowstate
 static void reloadwindowstate(struct client *c)
 {
 	Window w = cgetwin(c);
@@ -283,20 +286,20 @@ static void reloadwindowstate(struct client *c)
 
 	unsigned long n = 0;
 	Atom *states = getprop(w, NET_WM_STATE, XA_ATOM, 32, &n);
-	for (int i = 0; i < n; i++)
-		if (states[i] == NET_WM_STATE_SKIP_TASKBAR)
-			skiptaskbar = True;
-		else if (states[i] == NET_WM_STATE_FULLSCREEN)
-			isfullscreen = True;
-		else
-			removestate(w, states[i]);
-	if (states != NULL)
-		XFree(states);
+	for (size_t i = 0; i < n; i++) {
+		if (states[i] == NET_WM_STATE_SKIP_TASKBAR) {
+			skiptaskbar = True; }
+		else if (states[i] == NET_WM_STATE_FULLSCREEN) {
+			isfullscreen = True; }
+		else {
+			removestate(w, states[i]); } }
+	if (states != NULL) {
+		XFree(states); }
 
 	csetskiptaskbar(c, skiptaskbar);
 	csetfull(c, isfullscreen);
 }
-
+//@+node:caminhante.20240208155259.1: ** reloadwindowtype
 static void reloadwindowtype(struct client *c)
 {
 	Bool isdock = False;
@@ -312,7 +315,7 @@ static void reloadwindowtype(struct client *c)
 
 	csetdock(c, isdock);
 }
-
+//@+node:caminhante.20240208155254.1: ** reloadwindowdesktop
 static void reloadwindowdesktop(struct client *c)
 {
 	Window w = cgetwin(c);
@@ -325,7 +328,7 @@ static void reloadwindowdesktop(struct client *c)
 	} else
 		ewmh_notifyclientdesktop(w, cgetdesk(c));
 }
-
+//@+node:caminhante.20240208155250.1: ** ewmh_maprequest
 void ewmh_maprequest(struct client *c)
 {
 	/*
@@ -336,7 +339,7 @@ void ewmh_maprequest(struct client *c)
 	reloadwindowstate(c);
 	reloadwindowtype(c);
 }
-
+//@+node:caminhante.20240208155244.1: ** ewmh_manage
 void ewmh_manage(struct client *c)
 {
 	Window w = cgetwin(c);
@@ -363,7 +366,7 @@ void ewmh_manage(struct client *c)
 	reloadwindowname(c);
 	reloadwindowtype(c);
 }
-
+//@+node:caminhante.20240208155238.1: ** ewmh_unmanage
 void ewmh_unmanage(struct client *c)
 {
 	Window w = cgetwin(c);
@@ -371,7 +374,7 @@ void ewmh_unmanage(struct client *c)
 	delclient(w);
 	XDeleteProperty(dpy, w, NET_WM_ALLOWED_ACTIONS);
 }
-
+//@+node:caminhante.20240208155228.1: ** ewmh_withdraw
 void ewmh_withdraw(struct client *c)
 {
 	Window w = cgetwin(c);
@@ -381,7 +384,7 @@ void ewmh_withdraw(struct client *c)
 	XDeleteProperty(dpy, w, NET_WM_DESKTOP);
 	XDeleteProperty(dpy, w, NET_WM_STATE);
 }
-
+//@+node:caminhante.20240208155216.1: ** ewmh_notifyfocus
 /*
  * Notify change in focus. The focus change is only
  * accepted if 'old' matches the last recorded focus
@@ -407,7 +410,7 @@ void ewmh_notifyfocus(Window old, Window new)
 		current = new;
 	}
 }
-
+//@+node:caminhante.20240208155155.1: ** ewmh_notifyrestack
 void ewmh_notifyrestack(void)
 {
 	Window *v;
@@ -416,13 +419,14 @@ void ewmh_notifyrestack(void)
 	setprop(root, NET_CLIENT_LIST_STACKING, XA_WINDOW, 32, v, n);
 	free(v);
 }
-
+//@+node:caminhante.20240208155147.1: ** ewmh_propertynotify
 void ewmh_propertynotify(struct client *c, XPropertyEvent *e)
 {
+      (void) e;
 	if (e->atom == NET_WM_NAME)
 		reloadwindowname(c);
 }
-
+//@+node:caminhante.20240208154505.1: ** hasstate
 static Bool hasstate(Window w, Atom state)
 {
 	unsigned long n = 0;
@@ -437,7 +441,7 @@ static Bool hasstate(Window w, Atom state)
 		XFree(v);
 	return found;
 }
-
+//@+node:caminhante.20240208154500.1: ** removestate
 /*
  * Removes a _NET_WM_STATE property (including duplicates).
  */
@@ -453,7 +457,7 @@ static void removestate(Window w, Atom state)
 	if (v != NULL)
 		XFree(v);
 }
-
+//@+node:caminhante.20240208154442.1: ** addstate
 /*
  * Adds a _NET_WM_STATE property, unless it is already present.
  */
@@ -477,7 +481,7 @@ static void addstate(Window w, Atom state)
 	if (old != NULL)
 		XFree(old);
 }
-
+//@+node:caminhante.20240208154427.1: ** changestate
 static void changestate(Window w, int how, Atom state)
 {
 	switch (how) {
@@ -495,7 +499,7 @@ static void changestate(Window w, int how, Atom state)
 		break;
 	}
 }
-
+//@+node:caminhante.20240208154416.1: ** ewmh_notifyfull
 void ewmh_notifyfull(Window w, Bool full)
 {
 	if (full) {
@@ -504,7 +508,7 @@ void ewmh_notifyfull(Window w, Bool full)
 	} else
 		removestate(w, NET_WM_STATE_FULLSCREEN);
 }
-
+//@+node:caminhante.20240208154409.1: ** ewmh_clientmessage
 void ewmh_clientmessage(struct client *c, XClientMessageEvent *e)
 {
 	if (e->message_type == NET_ACTIVE_WINDOW && e->format == 32) {
@@ -523,7 +527,7 @@ void ewmh_clientmessage(struct client *c, XClientMessageEvent *e)
 		reloadwindowstate(c);
 	}
 }
-
+//@+node:caminhante.20240208154402.1: ** ewmh_rootclientmessage
 void ewmh_rootclientmessage(XClientMessageEvent *e)
 {
 	if (e->message_type == NET_CURRENT_DESKTOP && e->format == 32) {
@@ -538,3 +542,5 @@ void ewmh_rootclientmessage(XClientMessageEvent *e)
 		refocus(CurrentTime);
 	}
 }
+//@-others
+//@-leo

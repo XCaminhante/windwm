@@ -1,3 +1,9 @@
+//@+leo-ver=5-thin
+//@+node:caminhante.20240208143459.1: * @file xftfont.c
+//@@tabwidth -2
+//@@language c
+//@+others
+//@+node:caminhante.20240208163023.1: ** /sobre
 /*
  * Copyright 2010 Johan Veenhuizen
  *
@@ -19,15 +25,16 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-
+//@+node:caminhante.20240208163016.1: ** /includes
 #include <X11/Xlib.h>
 #include <X11/Xft/Xft.h>
 #include <string.h>
 
 #include "wind.h"
-
-#define DEFAULT "sans-serif:size=10"
-
+//@+node:caminhante.20240208163202.1: ** /macros
+#undef DEFAULT
+#define DEFAULT "sans-serif:size=6"
+//@+node:caminhante.20240208163006.1: ** ftload
 struct font *ftload(const char *name)
 {
 	XftFont  *font = NULL;
@@ -54,14 +61,14 @@ struct font *ftload(const char *name)
 
 	return f;
 }
-
+//@+node:caminhante.20240208162959.1: ** struct fontcolor
 struct fontcolor {
 	XftColor color;
 	XftDraw *draw;
 	Visual *visual;
 	Colormap colormap;
 };
-
+//@+node:caminhante.20240208162953.1: ** ftloadcolor
 struct fontcolor *ftloadcolor(const char *name)
 {
 	XftDraw *draw;
@@ -85,21 +92,21 @@ struct fontcolor *ftloadcolor(const char *name)
 
 	return c;
 }
-
+//@+node:caminhante.20240208162946.1: ** ftfree
 void ftfree(struct font *f)
 {
 	XftFont *font = f->data;
 	XftFontClose(dpy, font);
 	free(f);
 }
-
+//@+node:caminhante.20240208162941.1: ** ftfreecolor
 void ftfreecolor(struct fontcolor *fc)
 {
 	XftColorFree(dpy, fc->visual, fc->colormap, &fc->color);
 	XftDrawDestroy(fc->draw);
 	free(fc);
 }
-
+//@+node:caminhante.20240208162936.1: ** ftdrawstring
 void ftdrawstring(Drawable d, struct font *f, struct fontcolor *c,
 		int x, int y, const char *s)
 {
@@ -108,7 +115,7 @@ void ftdrawstring(Drawable d, struct font *f, struct fontcolor *c,
 	XftDrawString8(c->draw, &c->color, font, x, y,
 			(XftChar8 *)s, strlen(s));
 }
-
+//@+node:caminhante.20240208162932.1: ** ftdrawstring_utf8
 void ftdrawstring_utf8(Drawable d, struct font *f, struct fontcolor *c,
 		int x, int y, const char *s)
 {
@@ -117,7 +124,7 @@ void ftdrawstring_utf8(Drawable d, struct font *f, struct fontcolor *c,
 	XftDrawStringUtf8(c->draw, &c->color, font, x, y,
 			(XftChar8 *)s, strlen(s));
 }
-
+//@+node:caminhante.20240208162927.1: ** fttextwidth
 int fttextwidth(struct font *f, const char *s)
 {
 	XftFont *font = f->data;
@@ -125,7 +132,7 @@ int fttextwidth(struct font *f, const char *s)
 	XftTextExtents8(dpy, font, (XftChar8 *)s, strlen(s), &info);
 	return info.width - info.x; // [sic]
 }
-
+//@+node:caminhante.20240208162923.1: ** fttextwidth_utf8
 int fttextwidth_utf8(struct font *f, const char *s)
 {
 	XftFont *font = f->data;
@@ -133,3 +140,5 @@ int fttextwidth_utf8(struct font *f, const char *s)
 	XftTextExtentsUtf8(dpy, font, (XftChar8 *)s, strlen(s), &info);
 	return info.width - info.x; // [sic]
 }
+//@-others
+//@-leo

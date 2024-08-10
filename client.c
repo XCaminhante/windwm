@@ -1,3 +1,9 @@
+//@+leo-ver=5-thin
+//@+node:caminhante.20240208143459.31: * @file client.c
+//@@tabwidth -2
+//@@language c
+//@+others
+//@+node:caminhante.20240208151545.1: ** /sobre
 /*
  * Copyright 2010 Johan Veenhuizen
  *
@@ -19,7 +25,7 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-
+//@+node:caminhante.20240208151541.1: ** /includes
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +36,75 @@
 
 #include "list.h"
 #include "wind.h"
+//@+node:caminhante.20240208150805.1: ** /protótipos
+static void cmap(struct client *);
+static void cunmap(struct client *);
+static void cpop(struct client *);
+static void cpush(struct client *);
+static void cfocusapp(struct client *, Time);
+static void reloadwmtransientfor(struct client *);
+static void reloadwmhints(struct client *);
+static void reloadwmnormalhints(struct client *);
+static void reloadwmname(struct client *);
+static void reloadwmprotocols(struct client *);
+static void cupdatedesk(struct client *);
+static void cbuttonpress(struct client *, XButtonEvent *);
+static void keypress(struct client *, XKeyEvent *);
+static void keypress_delete(struct client *, unsigned, Time);
+static void keypress_pushapp(struct client *, unsigned, Time);
+static void keypress_fullscreen(struct client *, unsigned, Time);
+static void keypress_sticky(struct client *, unsigned, Time);
+static void focusin(struct client *, XFocusChangeEvent *);
+static void focusout(struct client *, XFocusChangeEvent *);
+static void configurerequest(struct client *, XConfigureRequestEvent *);
+static void propertynotify(struct client *, XPropertyEvent *);
+static void maprequest(struct client *, XMapRequestEvent *);
+static void cunmapnotify(struct client *, XUnmapEvent *);
+static void destroynotify(struct client *, XDestroyWindowEvent *);
+static void clientmessage(struct client *, XClientMessageEvent *);
+static void colormapnotify(struct client *, XColormapEvent *);
+static void cevent(void *, XEvent *);
+static void cinstallcolormaps(struct client *);
+static void crelease(struct client *, int);
+static void getclientstack(struct client ***, int *);
+static void csendwmproto(struct client *, Atom, Time);
+static void creframe(struct client *);
+static Bool cisframed(struct client *);
+static struct client *getfronttask(void);
+static Bool expectsfocus(struct client *);
+static void cunmanage(struct client *);
+static void cwithdraw(struct client *);
+static void smartpos(struct client *);
+static void randpos(struct geometry *);
+static Bool samedesk(struct client *, struct client *);
+static unsigned long overlaparea(struct geometry, struct geometry);
+static void move(struct client *, int, int);
+//@+node:caminhante.20240208150759.1: ** /constantes, variáveis e structs
+static LIST_DEFINE(winstack);
 
+// Current desk
+static Desk curdesk = 0;
+
+// Number of desks
+static Desk ndesk = 1;
+
+// True if restacking needed
+static Bool needrestack = False;
+
+// Dummy window for window stacking
+static Window stacktop = None;
+
+static struct {
+	KeySym keysym;
+	unsigned modifiers;
+	void (*function)(struct client *, unsigned, Time);
+} keymap[] = {
+	{ XK_BackSpace, Mod1Mask, keypress_delete },
+	{ XK_Escape, Mod1Mask, keypress_pushapp },
+	{ XK_Return, Mod1Mask, keypress_fullscreen },
+	{ XK_space, Mod1Mask, keypress_sticky },
+};
+//@+node:caminhante.20240208150816.1: *3* struct client
 struct client {
 	struct listener listener;
 	List winstack;
@@ -73,75 +147,7 @@ struct client {
 	Bool followdesk;
 	Bool initialized;
 };
-
-static void cmap(struct client *);
-static void cunmap(struct client *);
-static void cpop(struct client *);
-static void cpush(struct client *);
-static void cfocusapp(struct client *, Time);
-static void reloadwmtransientfor(struct client *);
-static void reloadwmhints(struct client *);
-static void reloadwmnormalhints(struct client *);
-static void reloadwmname(struct client *);
-static void reloadwmprotocols(struct client *);
-static void cupdatedesk(struct client *);
-static void buttonpress(struct client *, XButtonEvent *);
-static void keypress(struct client *, XKeyEvent *);
-static void keypress_delete(struct client *, unsigned, Time);
-static void keypress_pushapp(struct client *, unsigned, Time);
-static void keypress_fullscreen(struct client *, unsigned, Time);
-static void keypress_sticky(struct client *, unsigned, Time);
-static void focusin(struct client *, XFocusChangeEvent *);
-static void focusout(struct client *, XFocusChangeEvent *);
-static void configurerequest(struct client *, XConfigureRequestEvent *);
-static void propertynotify(struct client *, XPropertyEvent *);
-static void maprequest(struct client *, XMapRequestEvent *);
-static void unmapnotify(struct client *, XUnmapEvent *);
-static void destroynotify(struct client *, XDestroyWindowEvent *);
-static void clientmessage(struct client *, XClientMessageEvent *);
-static void colormapnotify(struct client *, XColormapEvent *);
-static void event(void *, XEvent *);
-static void cinstallcolormaps(struct client *);
-static void crelease(struct client *, int);
-static void getclientstack(struct client ***, int *);
-static void csendwmproto(struct client *, Atom, Time);
-static void creframe(struct client *);
-static Bool cisframed(struct client *);
-static struct client *getfronttask(void);
-static Bool expectsfocus(struct client *);
-static void cunmanage(struct client *);
-static void cwithdraw(struct client *);
-static void smartpos(struct client *);
-static void randpos(struct geometry *);
-static Bool samedesk(struct client *, struct client *);
-static unsigned long overlaparea(struct geometry, struct geometry);
-static void move(struct client *, int, int);
-
-static LIST_DEFINE(winstack);
-
-// Current desk
-static Desk curdesk = 0;
-
-// Number of desks
-static Desk ndesk = 1;
-
-// True if restacking needed
-static Bool needrestack = False;
-
-// Dummy window for window stacking
-static Window stacktop = None;
-
-static struct {
-	KeySym keysym;
-	unsigned modifiers;
-	void (*function)(struct client *, unsigned, Time);
-} keymap[] = {
-	{ XK_BackSpace, Mod1Mask, keypress_delete },
-	{ XK_Escape, Mod1Mask, keypress_pushapp },
-	{ XK_Return, Mod1Mask, keypress_fullscreen },
-	{ XK_space, Mod1Mask, keypress_sticky },
-};
-
+//@+node:caminhante.20240208150738.1: ** setndesk
 void setndesk(Desk val)
 {
 	if (val == 0 || val >= 0xffffffffUL)
@@ -167,7 +173,7 @@ void setndesk(Desk val)
 	if (val < oldval)
 		ewmh_notifyndesk(val);
 }
-
+//@+node:caminhante.20240208150731.1: ** gotodesk
 void gotodesk(Desk d)
 {
 	if (d == curdesk || d >= ndesk || d == DESK_ALL)
@@ -195,7 +201,7 @@ void gotodesk(Desk d)
 
 	ewmh_notifycurdesk(curdesk);
 }
-
+//@+node:caminhante.20240208150717.1: ** csetappdesk
 void csetappdesk(struct client *c, Desk d)
 {
 	struct client **v;
@@ -206,7 +212,7 @@ void csetappdesk(struct client *c, Desk d)
 			csetdesk(v[i], d);
 	free(v);
 }
-
+//@+node:caminhante.20240208150710.1: ** csetdesk
 void csetdesk(struct client *c, Desk d)
 {
 	if (d >= ndesk && d != DESK_ALL)
@@ -224,18 +230,18 @@ void csetdesk(struct client *c, Desk d)
 	if (c->frame != NULL)
 		fupdate(c->frame);
 }
-
+//@+node:caminhante.20240208150705.1: ** cgetdesk
 Desk cgetdesk(struct client *c)
 {
 	return c->desk;
 }
-
+//@+node:caminhante.20240208150701.1: ** csetdock
 void csetdock(struct client *c, Bool isdock)
 {
 	c->isdock = isdock;
 	creframe(c);
 }
-
+//@+node:caminhante.20240208150654.1: ** csetfull
 void csetfull(struct client *c, Bool enabled)
 {
 	if (enabled && !c->isfull) {
@@ -273,13 +279,13 @@ void csetfull(struct client *c, Bool enabled)
 		ewmh_notifyfull(c->window, False);
 	}
 }
-
+//@+node:caminhante.20240208150647.1: ** csetundecorated
 void csetundecorated(struct client *c, Bool enabled)
 {
 	c->isundecorated = enabled;
 	creframe(c);
 }
-
+//@+node:caminhante.20240208150642.1: ** csetappfollowdesk
 void csetappfollowdesk(struct client *c, Bool enabled)
 {
 	struct client **v;
@@ -290,7 +296,7 @@ void csetappfollowdesk(struct client *c, Bool enabled)
 			v[i]->followdesk = enabled;
 	free(v);
 }
-
+//@+node:caminhante.20240208150637.1: ** getwindowstack
 /*
  * Return client window stack, from bottom (first) to top (last).
  * Caller deallocates using free(3).
@@ -313,7 +319,7 @@ void getwindowstack(Window **vp, size_t *np)
 	*vp = v;
 	*np = n;
 }
-
+//@+node:caminhante.20240208150631.1: ** cpushapp
 void cpushapp(struct client *c)
 {
 	struct client **v;
@@ -324,7 +330,7 @@ void cpushapp(struct client *c)
 			cpush(v[i]);
 	free(v);
 }
-
+//@+node:caminhante.20240208150625.1: ** cpopapp
 void cpopapp(struct client *c)
 {
 	struct client **v;
@@ -354,7 +360,7 @@ void cpopapp(struct client *c)
 
 	free(v);
 }
-
+//@+node:caminhante.20240208150619.1: ** getclientstack
 /*
  * Return client stack, from bottom (first) to top (last).
  * Caller deallocates using free(3).
@@ -372,7 +378,7 @@ static void getclientstack(struct client ***vp, int *np)
 	*vp = v;
 	*np = n;
 }
-
+//@+node:caminhante.20240208150613.1: ** cpop
 static void cpop(struct client *c)
 {
 	if (LIST_TAIL(&winstack) != &c->winstack) {
@@ -381,7 +387,7 @@ static void cpop(struct client *c)
 		needrestack = True;
 	}
 }
-
+//@+node:caminhante.20240208150610.1: ** cpush
 static void cpush(struct client *c)
 {
 	if (LIST_HEAD(&winstack) != &c->winstack) {
@@ -390,7 +396,7 @@ static void cpush(struct client *c)
 		needrestack = True;
 	}
 }
-
+//@+node:caminhante.20240208150604.1: ** restack
 void restack(void)
 {
 	if (!needrestack)
@@ -413,7 +419,7 @@ void restack(void)
 	needrestack = False;
 	ewmh_notifyrestack();
 }
-
+//@+node:caminhante.20240208150559.1: ** reloadwmtransientfor
 static void reloadwmtransientfor(struct client *c)
 {
 	c->wmtransientfor = None;
@@ -430,7 +436,7 @@ static void reloadwmtransientfor(struct client *c)
 		cupdatedesk(c);
 	}
 }
-
+//@+node:caminhante.20240208150554.1: ** reloadwmhints
 static void reloadwmhints(struct client *c)
 {
 	if (c->wmhints != NULL)
@@ -453,7 +459,7 @@ static void reloadwmhints(struct client *c)
 		cfocus(c, CurrentTime);
 	}
 }
-
+//@+node:caminhante.20240208150549.1: ** reloadwmnormalhints
 static void reloadwmnormalhints(struct client *c)
 {
 	if (c->wmnormalhints == NULL)
@@ -464,7 +470,7 @@ static void reloadwmnormalhints(struct client *c)
 		XGetWMNormalHints(dpy, c->window, c->wmnormalhints, &dummy);
 	}
 }
-
+//@+node:caminhante.20240208150541.1: ** reloadwmname
 static void reloadwmname(struct client *c)
 {
 	free(c->wmname);
@@ -480,7 +486,7 @@ static void reloadwmname(struct client *c)
 	if (c->frame != NULL)
 		fupdate(c->frame);
 }
-
+//@+node:caminhante.20240208150535.1: ** reloadwmprotocols
 static void reloadwmprotocols(struct client *c)
 {
 	if (c->wmprotocols != NULL) {
@@ -494,7 +500,7 @@ static void reloadwmprotocols(struct client *c)
 	if (c->frame != NULL)
 		fupdate(c->frame);
 }
-
+//@+node:caminhante.20240208150531.1: ** cupdatedesk
 static void cupdatedesk(struct client *c)
 {
 	Desk d = c->desk;
@@ -518,41 +524,43 @@ static void cupdatedesk(struct client *c)
 	if (d != c->desk)
 		csetdesk(c, d);
 }
-
-static void buttonpress(struct client *c, XButtonEvent *e)
+//@+node:caminhante.20240208150525.1: ** cbuttonpress
+static void cbuttonpress(struct client *c, XButtonEvent *e)
 {
 	cpopapp(c);
 	cfocus(c, e->time);
 	XAllowEvents(dpy, ReplayPointer, e->time);
 }
-
+//@+node:caminhante.20240208150451.1: ** keypress
 static void keypress(struct client *c, XKeyEvent *e)
 {
-	for (int i = 0; i < NELEM(keymap); i++)
+	for (size_t i = 0; i < NELEM(keymap); i++)
 		if (XKeysymToKeycode(dpy, keymap[i].keysym) == e->keycode)
 			keymap[i].function(c, e->state, e->time);
 }
-
+//@+node:caminhante.20240208150447.1: ** keypress_delete
 static void keypress_delete(struct client *c, unsigned state, Time time)
 {
-	if (!c->isdock)
-		cdelete(c, time);
+      (void) state;
+	if (!c->isdock) cdelete(c, time);
 }
-
+//@+node:caminhante.20240208150443.1: ** keypress_pushapp
 static void keypress_pushapp(struct client *c, unsigned state, Time time)
 {
+      (void) state;
 	cpushapp(c);
 	refocus(time);
 }
-
+//@+node:caminhante.20240208150438.1: ** keypress_fullscreen
 static void keypress_fullscreen(struct client *c, unsigned state, Time time)
 {
-	if (!c->isdock)
-		csetfull(c, !c->isfull);
+      (void) state; (void) time;
+	if (!c->isdock) csetfull(c, !c->isfull);
 }
-
+//@+node:caminhante.20240208150432.1: ** keypress_sticky
 static void keypress_sticky(struct client *c, unsigned state, Time time)
 {
+      (void) state; (void) time;
 	if (c->isdock)
 		return;
 
@@ -565,7 +573,7 @@ static void keypress_sticky(struct client *c, unsigned state, Time time)
 		cpopapp(c);
 	}
 }
-
+//@+node:caminhante.20240208150413.1: ** focusin
 static void focusin(struct client *c, XFocusChangeEvent *e)
 {
 	if (e->mode == NotifyUngrab || e->detail == NotifyPointerRoot ||
@@ -573,8 +581,8 @@ static void focusin(struct client *c, XFocusChangeEvent *e)
 		return;
 
 	// This shouldn't happen.
-	if (c->hasfocus || !c->ismapped)
-		return;
+	if (c->hasfocus || !c->ismapped) {
+		return; }
 
 	c->hasfocus = True;
 
@@ -587,7 +595,7 @@ static void focusin(struct client *c, XFocusChangeEvent *e)
 
 	ewmh_notifyfocus(None, c->window);
 }
-
+//@+node:caminhante.20240208150407.1: ** focusout
 static void focusout(struct client *c, XFocusChangeEvent *e)
 {
 	if (e->mode == NotifyGrab)
@@ -599,8 +607,8 @@ static void focusout(struct client *c, XFocusChangeEvent *e)
 		return;
 
 	// This shouldn't happen.
-	if (!c->hasfocus)
-		return;
+	if (!c->hasfocus) {
+		return; }
 
 	c->hasfocus = False;
 
@@ -612,7 +620,7 @@ static void focusout(struct client *c, XFocusChangeEvent *e)
 
 	ewmh_notifyfocus(c->window, None);
 }
-
+//@+node:caminhante.20240208150402.1: ** configurerequest
 static void configurerequest(struct client *c, XConfigureRequestEvent *e)
 {
 	if (c->frame != NULL) {
@@ -657,7 +665,7 @@ static void configurerequest(struct client *c, XConfigureRequestEvent *e)
 				.height = c->geometry.height,
 				.border_width = c->geometry.borderwidth });
 }
-
+//@+node:caminhante.20240208150355.1: ** propertynotify
 static void propertynotify(struct client *c, XPropertyEvent *e)
 {
 	switch (e->atom) {
@@ -682,13 +690,14 @@ static void propertynotify(struct client *c, XPropertyEvent *e)
 	ewmh_propertynotify(c, e);
 	mwm_propertynotify(c, e);
 }
-
+//@+node:caminhante.20240208150348.1: ** maprequest
 /*
  * We don't listen to this event ourselves, but get it redirected to
  * us from the root listener and from the frame listener.
  */
 static void maprequest(struct client *c, XMapRequestEvent *e)
 {
+      (void) e;
 	ewmh_maprequest(c);
 	cpopapp(c);
 	if (cisvisible(c)) {
@@ -696,20 +705,22 @@ static void maprequest(struct client *c, XMapRequestEvent *e)
 		cfocus(c, CurrentTime);
 	}
 }
-
-static void unmapnotify(struct client *c, XUnmapEvent *e)
+//@+node:caminhante.20240208150342.1: ** cunmapnotify
+static void cunmapnotify(struct client *c, XUnmapEvent *e)
 {
+      (void) e;
 	if (c->ignoreunmapcount > 0)
 		c->ignoreunmapcount--;
 	else
 		cwithdraw(c);
 }
-
+//@+node:caminhante.20240208150338.1: ** destroynotify
 static void destroynotify(struct client *c, XDestroyWindowEvent *e)
 {
+      (void) e;
 	cwithdraw(c);
 }
-
+//@+node:caminhante.20240208150332.1: ** clientmessage
 static void clientmessage(struct client *c, XClientMessageEvent *e)
 {
 	if (e->message_type == WM_CHANGE_STATE && e->format == 32 &&
@@ -724,7 +735,7 @@ static void clientmessage(struct client *c, XClientMessageEvent *e)
 
 	ewmh_clientmessage(c, e);
 }
-
+//@+node:caminhante.20240208150327.1: ** colormapnotify
 static void colormapnotify(struct client *c, XColormapEvent *e)
 {
 	if (e->new) {
@@ -733,12 +744,12 @@ static void colormapnotify(struct client *c, XColormapEvent *e)
 			cinstallcolormaps(c);
 	}
 }
-
-static void event(void *self, XEvent *e)
+//@+node:caminhante.20240208150322.1: ** cevent
+static void cevent(void *self, XEvent *e)
 {
 	switch (e->type) {
 	case ButtonPress:
-		buttonpress(self, &e->xbutton);
+		cbuttonpress(self, &e->xbutton);
 		break;
 	case KeyPress:
 		keypress(self, &e->xkey);
@@ -774,13 +785,13 @@ static void event(void *self, XEvent *e)
 		break;
 	}
 }
-
+//@+node:caminhante.20240208150315.1: ** cinstallcolormaps
 static void cinstallcolormaps(struct client *c)
 {
 	XInstallColormap(dpy, c->colormap == None ?
 			DefaultColormap(dpy, scr) : c->colormap);
 }
-
+//@+node:caminhante.20240208150311.1: ** cisvisible
 /*
  * Returns true if the window is, or should be, visible.
  */
@@ -788,7 +799,7 @@ Bool cisvisible(struct client *c)
 {
 	return c->desk == curdesk || c->desk == DESK_ALL;
 }
-
+//@+node:caminhante.20240208150305.1: ** expectsfocus
 /*
  * Returns true if the window expects keyboard input focus.
  * A window that does not specify an input hint is considered
@@ -800,7 +811,7 @@ static Bool expectsfocus(struct client *c)
 			!(c->wmhints->flags & InputHint) ||
 			c->wmhints->input;
 }
-
+//@+node:caminhante.20240208150258.1: ** cistask
 /*
  * Returns true if the window is a task, i.e. if it appears in taskbars.
  */
@@ -808,7 +819,7 @@ Bool cistask(struct client *c)
 {
 	return !c->skiptaskbar && c->wmtransientfor == None;
 }
-
+//@+node:caminhante.20240208150250.1: ** manage
 struct client *manage(Window window)
 {
 	XWindowAttributes attr;
@@ -877,7 +888,7 @@ struct client *manage(Window window)
 	 * for events and THEN (re)load all attributes and
 	 * properties. This avoids losing update events.
 	 */
-	c->listener.function = event;
+	c->listener.function = cevent;
 	c->listener.pointer = c;
 	setlistener(c->window, &c->listener);
 	XSelectInput(dpy, c->window,
@@ -926,7 +937,7 @@ struct client *manage(Window window)
 	grabbutton(AnyButton, AnyModifier, c->window, True, 0,
 			GrabModeSync, GrabModeAsync, None, None);
 
-	for (int i = 0; i < NELEM(keymap); i++)
+	for (size_t i = 0; i < NELEM(keymap); i++)
 		grabkey(XKeysymToKeycode(dpy, keymap[i].keysym),
 				keymap[i].modifiers, c->window, True,
 				GrabModeAsync, GrabModeAsync);
@@ -975,7 +986,7 @@ struct client *manage(Window window)
 
 	return c;
 }
-
+//@+node:caminhante.20240208150238.1: ** manageall
 void manageall(void)
 {
 	assert(stacktop == None);
@@ -984,7 +995,7 @@ void manageall(void)
 	Window r, p, *stack;
 	unsigned n;
 	if (XQueryTree(dpy, root, &r, &p, &stack, &n) != 0) {
-		for (int i = 0; i < n; i++) {
+		for (size_t i = 0; i < n; i++) {
 			if (ismapped(stack[i]))
 				manage(stack[i]);
 		}
@@ -993,7 +1004,7 @@ void manageall(void)
 	}
 	restack();
 }
-
+//@+node:caminhante.20240208150232.1: ** cmap
 static void cmap(struct client *c)
 {
 	assert(c->desk == curdesk || c->desk == DESK_ALL);
@@ -1019,7 +1030,7 @@ static void cmap(struct client *c)
 		c->ismapped = True;
 	}
 }
-
+//@+node:caminhante.20240208150223.1: ** cunmap
 static void cunmap(struct client *c)
 {
 	if (c->ismapped) {
@@ -1034,7 +1045,7 @@ static void cunmap(struct client *c)
 		c->ismapped = False;
 	}
 }
-
+//@+node:caminhante.20240208150218.1: ** crelease
 static void crelease(struct client *c, Bool clientrequested)
 {
 	// Unset this or fdestroy() will refocus the window.
@@ -1069,27 +1080,27 @@ static void crelease(struct client *c, Bool clientrequested)
 	if (getfocus() == NULL)
 		refocus(CurrentTime);
 }
-
+//@+node:caminhante.20240208150212.1: ** cwithdraw
 static void cwithdraw(struct client *c)
 {
 	ewmh_withdraw(c);
 	setwmstate(c->window, WithdrawnState);
 	crelease(c, True);
 }
-
+//@+node:caminhante.20240208150206.1: ** cunmanage
 static void cunmanage(struct client *c)
 {
 	ewmh_unmanage(c);
 	setwmstate(c->window, NormalState);
 	crelease(c, False);
 }
-
+//@+node:caminhante.20240208150200.1: ** cdelete
 void cdelete(struct client *c, Time time)
 {
 	if (chaswmproto(c, WM_DELETE_WINDOW))
 		csendwmproto(c, WM_DELETE_WINDOW, time);
 }
-
+//@+node:caminhante.20240208150154.1: ** unmanageall
 void unmanageall(void)
 {
 	struct client **v;
@@ -1104,7 +1115,7 @@ void unmanageall(void)
 		stacktop = None;
 	}
 }
-
+//@+node:caminhante.20240208150147.1: ** getfocus
 struct client *getfocus(void)
 {
 	List *lp;
@@ -1118,7 +1129,7 @@ struct client *getfocus(void)
 	}
 	return NULL;
 }
-
+//@+node:caminhante.20240208150138.1: ** getfronttask
 static struct client *getfronttask(void)
 {
 	List *lp;
@@ -1129,7 +1140,7 @@ static struct client *getfronttask(void)
 	}
 	return NULL;
 }
-
+//@+node:caminhante.20240208150130.1: ** cfocusapp
 static void cfocusapp(struct client *c, Time time)
 {
 	struct client *topmost = NULL;
@@ -1155,7 +1166,7 @@ static void cfocusapp(struct client *c, Time time)
 
 	cfocus(focus, time);
 }
-
+//@+node:caminhante.20240208150116.1: ** cfocus
 /*
  * Change input focus to the specified client, which must be
  * mapped on the current desktop.
@@ -1169,7 +1180,7 @@ void cfocus(struct client *c, Time time)
 
 	XSetInputFocus(dpy, c->window, RevertToPointerRoot, time);
 }
-
+//@+node:caminhante.20240208150109.1: ** client
 /*
  * Focus the front window and return it.
  */
@@ -1180,7 +1191,7 @@ struct client *refocus(Time time)
 		cfocusapp(c, time);
 	return c;
 }
-
+//@+node:caminhante.20240208150103.1: ** namewidth
 int namewidth(struct font *font, struct client *c)
 {
 	if (c->netwmname != NULL)
@@ -1190,7 +1201,7 @@ int namewidth(struct font *font, struct client *c)
 	else
 		return 0;
 }
-
+//@+node:caminhante.20240208150057.1: ** drawname
 void drawname(Drawable d, struct font *font, struct fontcolor *color,
 		int x, int y, struct client *c)
 {
@@ -1199,7 +1210,7 @@ void drawname(Drawable d, struct font *font, struct fontcolor *color,
 	else if (c->wmname != NULL)
 		ftdrawstring(d, font, color, x, y, c->wmname);
 }
-
+//@+node:caminhante.20240208150050.1: ** chaswmproto
 Bool chaswmproto(struct client *c, Atom protocol)
 {
 	for (int i = 0; i < c->wmprotocolscount; i++)
@@ -1207,7 +1218,7 @@ Bool chaswmproto(struct client *c, Atom protocol)
 			return True;
 	return False;
 }
-
+//@+node:caminhante.20240208150042.1: ** csendwmproto
 static void csendwmproto(struct client *c, Atom protocol, Time time)
 {
 	XEvent e;
@@ -1222,7 +1233,7 @@ static void csendwmproto(struct client *c, Atom protocol, Time time)
 
 	XSendEvent(dpy, c->window, False, 0L, &e);
 }
-
+//@+node:caminhante.20240208150035.1: ** cgetgrav
 int cgetgrav(struct client *c)
 {
 	if (c->wmnormalhints != NULL &&
@@ -1231,7 +1242,7 @@ int cgetgrav(struct client *c)
 	else
 		return NorthWestGravity;
 }
-
+//@+node:caminhante.20240208150028.1: ** cgetgeom
 struct geometry cgetgeom(struct client *c)
 {
 	if (c->isfull)
@@ -1244,12 +1255,12 @@ struct geometry cgetgeom(struct client *c)
 	else
 		return c->geometry;
 }
-
+//@+node:caminhante.20240208150020.1: ** csetgeom
 void csetgeom(struct client *c, struct geometry g)
 {
 	c->geometry = g;
 }
-
+//@+node:caminhante.20240208150014.1: ** chintsize
 void chintsize(struct client *c, int width, int height,
 		int *rwidth, int *rheight)
 {
@@ -1325,7 +1336,7 @@ void chintsize(struct client *c, int width, int height,
 	*rwidth = width;
 	*rheight = height;
 }
-
+//@+node:caminhante.20240208150003.1: ** csendconf
 void csendconf(struct client *c)
 {
 	struct geometry g = cgetgeom(c);
@@ -1342,17 +1353,17 @@ void csendconf(struct client *c)
 				.above = None,
 				.override_redirect = False });
 }
-
+//@+node:caminhante.20240208145950.1: ** chasfocus
 Bool chasfocus(struct client *c)
 {
 	return c->hasfocus;
 }
-
+//@+node:caminhante.20240208145943.1: ** cgetwin
 Window cgetwin(struct client *c)
 {
 	return c->window;
 }
-
+//@+node:caminhante.20240208145936.1: ** csetnetwmname
 void csetnetwmname(struct client *c, const char *name)
 {
 	free(c->netwmname);
@@ -1361,23 +1372,23 @@ void csetnetwmname(struct client *c, const char *name)
 	if (c->frame != NULL)
 		fupdate(c->frame);
 }
-
+//@+node:caminhante.20240208145931.1: ** cignoreunmap
 void cignoreunmap(struct client *c)
 {
 	assert(c->ismapped);
 	c->ignoreunmapcount++;
 }
-
+//@+node:caminhante.20240208145923.1: ** cismapped
 Bool cismapped(struct client *c)
 {
 	return c->ismapped;
 }
-
+//@+node:caminhante.20240208145918.1: ** cisurgent
 Bool cisurgent(struct client *c)
 {
 	return c->wmhints != NULL && (c->wmhints->flags & XUrgencyHint) != 0;
 }
-
+//@+node:caminhante.20240208145912.1: ** creframe
 static void creframe(struct client *c)
 {
 	if (cisframed(c)) {
@@ -1388,17 +1399,17 @@ static void creframe(struct client *c)
 		c->frame = NULL;
 	}
 }
-
+//@+node:caminhante.20240208145906.1: ** cisframed
 static Bool cisframed(struct client *c)
 {
 	return !c->isfull && !c->isdock && !c->isundecorated;
 }
-
+//@+node:caminhante.20240208145859.1: ** csetskiptaskbar
 void csetskiptaskbar(struct client *c, Bool skiptaskbar)
 {
 	c->skiptaskbar = skiptaskbar;
 }
-
+//@+node:caminhante.20240208145851.1: ** smartpos
 /*
  * Find a good location for the specified client and move it there.
  *
@@ -1447,9 +1458,9 @@ static void smartpos(struct client *c)
 
 		// Prefer to position a window near the edges of the display.
 		unsigned x2 = DisplayWidth(dpy, scr) - (g.x + g.width);
-		badness += MIN(g.x, x2);
+		badness += MIN((unsigned)g.x, x2);
 		unsigned y2 = DisplayHeight(dpy, scr) - (g.y + g.height);
-		badness += MIN(g.y, y2);
+		badness += MIN((unsigned)g.y, y2);
 
 		if (badness < min) {
 			min = badness;
@@ -1461,7 +1472,7 @@ static void smartpos(struct client *c)
 
 	free(v);
 }
-
+//@+node:caminhante.20240208145834.1: ** randpos
 /*
  * Find a random location for the specified geometry.
  */
@@ -1472,7 +1483,7 @@ static void randpos(struct geometry *g)
 	g->x = maxx > 0 ? rand() % maxx : 0;
 	g->y = maxy > 0 ? rand() % maxy : 0;
 }
-
+//@+node:caminhante.20240208145826.1: ** samedesk
 /*
  * Return true if, and only if, the two clients are visible on the same desk.
  */
@@ -1481,7 +1492,7 @@ static Bool samedesk(struct client *c1, struct client *c2)
 	return c1->desk == c2->desk ||
 			c1->desk == DESK_ALL || c2->desk == DESK_ALL;
 }
-
+//@+node:caminhante.20240208145817.1: ** overlaparea
 static unsigned long overlaparea(struct geometry g1, struct geometry g2)
 {
 	int x1 = g1.x;
@@ -1501,7 +1512,7 @@ static unsigned long overlaparea(struct geometry g1, struct geometry g2)
 	} else
 		return 0;
 }
-
+//@+node:caminhante.20240208145808.1: ** move
 /*
  * XXX: We move a window by simulating a ConfigureRequest from
  *      the client.
@@ -1522,3 +1533,5 @@ static void move(struct client *c, int x, int y)
 			.value_mask = CWX | CWY };
 	redirect(&e, parent);
 }
+//@-others
+//@-leo
