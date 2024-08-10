@@ -7,11 +7,13 @@ CFLAGS="-Wall -Wextra -Werror -Wfatal-errors \
 PROGFLAGS="$(pkg-config x11 --cflags --libs) \
 $(pkg-config xft --cflags --libs) \
 $(pkg-config freetype2 --cflags --libs)"
+[ -f "$0.bin" ] || gcc "$0" $CFLAGS $PROGFLAGS -o "$0.bin"
 [ "$0" -nt "$0.bin" ] && gcc "$0" $CFLAGS $PROGFLAGS -o "$0.bin"
 exec "$0.bin" "$@"
 #endif
 //@+leo-ver=5-thin
 //@+node:caminhante.20240208143459.12: * @file windwm.c
+//@@first
 //@@first
 //@@first
 //@@first

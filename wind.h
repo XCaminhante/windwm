@@ -21,39 +21,39 @@
 typedef unsigned long Desk;
 
 struct geometry {
-	int x;
-	int y;
-	int width;
-	int height;
-	int borderwidth;
+  int x;
+  int y;
+  int width;
+  int height;
+  int borderwidth;
 };
 
 struct extents {
-	int top;
-	int bottom;
-	int left;
-	int right;
+  int top;
+  int bottom;
+  int left;
+  int right;
 };
 
 struct listener {
-	void *pointer;
-	void (*function)(void *, XEvent *);
+  void *pointer;
+  void (*function)(void *, XEvent *);
 };
 
 struct bitmap {
-	unsigned char *bits;
-	int width;
-	int height;
-	Pixmap pixmap;
+  unsigned char *bits;
+  int width;
+  int height;
+  Pixmap pixmap;
 };
 
 #define DEFINE_BITMAP(name) \
-		struct bitmap name = { \
-			.bits = name##_bits, \
-			.width = name##_width, \
-			.height = name##_height, \
-			.pixmap = None \
-		}
+  struct bitmap name = { \
+    .bits = name##_bits, \
+    .width = name##_width, \
+    .height = name##_height, \
+    .pixmap = None \
+  }
 
 struct button;
 struct client;
@@ -61,14 +61,14 @@ struct dragger;
 struct frame;
 
 struct font {
-	int ascent;
-	int descent;
-	int size;
-	void *data;
+  int ascent;
+  int descent;
+  int size;
+  void *data;
 };
 
 extern enum runlevel {
-	RL_STARTUP, RL_NORMAL, RL_SHUTDOWN,
+  RL_STARTUP, RL_NORMAL, RL_SHUTDOWN,
 } runlevel;
 
 // The display name argument used in call to XOpenDisplay

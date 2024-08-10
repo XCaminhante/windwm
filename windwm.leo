@@ -34,7 +34,7 @@
 <v t="caminhante.20240209172034.12"><vh>@edit list.h</vh></v>
 <v t="caminhante.20240209172034.23"><vh>@edit NEWS</vh></v>
 <v t="caminhante.20240209172034.22"><vh>@edit README</vh></v>
-<v t="caminhante.20240209172034.9"><vh>@edit test.c</vh></v>
+<v t="caminhante.20240209172034.9"><vh>@file test.c</vh></v>
 <v t="caminhante.20240209172034.8"><vh>@edit wind.1</vh></v>
 <v t="caminhante.20240208143459.33"><vh>@file button.c</vh></v>
 <v t="caminhante.20240208143459.31"><vh>@file client.c</vh></v>
