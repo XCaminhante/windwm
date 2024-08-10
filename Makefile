@@ -8,7 +8,7 @@ PROGFLAGS := $(shell pkg-config x11 --cflags --libs) \
 	$(shell pkg-config freetype2 --cflags --libs)
 
 all: windwm
-	./windwm :1
+	DISPLAY=:1 ./windwm -c xterm :1
 
 .PHONY: test
 test:

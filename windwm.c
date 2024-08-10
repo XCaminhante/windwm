@@ -74,17 +74,6 @@ exec "$0.bin" "$@"
 #include "delodd.xbm"
 
 #include "defines.h"
-//@+node:caminhante.20240208144918.1: ** /includes de módulos
-#include "list.h"
-
-#include "button.c"
-#include "client.c"
-#include "dragger.c"
-#include "ewmh.c"
-#include "frame.c"
-#include "lib.c"
-#include "mwm.c"
-#include "root.c"
 //@+node:caminhante.20240208144603.1: ** /variáveis e constantes
 static int errhandler(Display *, XErrorEvent *);
 static void onsignal(int);
@@ -102,6 +91,9 @@ struct bitmap *deletebitmap;
 static const char *progname;
 
 static int exitstatus;
+
+static char *call_argv[11] = {0};
+static size_t call_argc = 0;
 
 /*
  * If true, enable debug mode. This will enable synchronous
@@ -142,6 +134,17 @@ Atom WM_STATE;
 static XContext listeners;
 
 static sigset_t sigmask;
+//@+node:caminhante.20240208144918.1: ** /includes de módulos
+#include "list.h"
+
+#include "button.c"
+#include "client.c"
+#include "dragger.c"
+#include "ewmh.c"
+#include "frame.c"
+#include "lib.c"
+#include "mwm.c"
+#include "root.c"
 //@+node:caminhante.20240208144546.1: ** errorf
 /*
  * Print formatted error message
@@ -235,6 +238,7 @@ static void usage(FILE *f)
 			" [ -b color ]"
 			" [ -F color ]"
 			" [ -B color ]"
+                    " [ -c command [ -c arg1 ] [ -c arg2 ] ...]"
 			" [ display ]\n", progname);
 }
 //@+node:caminhante.20240208144452.1: ** main
@@ -260,7 +264,7 @@ int main (int argc, char *argv[]) {
   Desk ndesk = 0;
 
   int opt;
-  while ((opt = getopt(argc, argv, "B:b:F:f:n:t:v")) != -1) {
+  while ((opt = getopt(argc, argv, "B:b:F:f:n:t:c:v")) != -1) {
     switch (opt) {
     case 'B':
       hlbname = optarg;
@@ -287,6 +291,9 @@ int main (int argc, char *argv[]) {
       break;
     case 't':
       ftname = optarg;
+      break;
+    case 'c':
+      if (call_argc < 10) { call_argv[call_argc++] = optarg; }
       break;
     case 'v':
       debug = True;
@@ -395,6 +402,18 @@ int main (int argc, char *argv[]) {
   if (osa.sa_handler != SIG_IGN) {
     sigaction(SIGTERM, &sa, NULL);
     sigaddset(&sigsafemask, SIGTERM);
+  }
+
+  { //NOTE prevenindo surgimento de processos zumbis sem usar wait() após fork()
+    struct sigaction sac;
+    sac.sa_handler = SIG_IGN;
+    sigemptyset(&sac.sa_mask);
+    sac.sa_flags = SA_NOCLDWAIT | SA_NOCLDSTOP;
+
+    if (sigaction(SIGCHLD, &sac, 0) == -1) {
+      perror(0);
+      return 1;
+    }
   }
 
   sigprocmask(SIG_SETMASK, &sigsafemask, NULL);

@@ -265,9 +265,8 @@ void ewmh_startwm(void)
 			&wmcheckwin, 1);
 }
 //@+node:caminhante.20240208155315.1: ** ewmh_stopwm
-void ewmh_stopwm(void)
-{
-	XDestroyWindow(dpy, wmcheckwin);
+void ewmh_stopwm(void) {
+  XDestroyWindow(dpy, wmcheckwin);
 }
 //@+node:caminhante.20240208155310.1: ** reloadwindowname
 static void reloadwindowname(struct client *c)
@@ -504,10 +503,10 @@ static void changestate(Window w, int how, Atom state)
 void ewmh_notifyfull(Window w, Bool full)
 {
 	if (full) {
-		if (!hasstate(w, NET_WM_STATE_FULLSCREEN))
-			addstate(w, NET_WM_STATE_FULLSCREEN);
-	} else
-		removestate(w, NET_WM_STATE_FULLSCREEN);
+		if (!hasstate(w, NET_WM_STATE_FULLSCREEN)) {
+			addstate(w, NET_WM_STATE_FULLSCREEN); }
+	} else {
+		removestate(w, NET_WM_STATE_FULLSCREEN); }
 }
 //@+node:caminhante.20240208154409.1: ** ewmh_clientmessage
 void ewmh_clientmessage(struct client *c, XClientMessageEvent *e)

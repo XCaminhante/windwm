@@ -79,7 +79,7 @@ static void resizetopright(void *, int, int, unsigned long, Time);
 static size_t fcount;
 static Cursor cursortopleft = None;
 static Cursor cursortopright = None;
-static Cursor cursorclose = None;
+
 //@+node:caminhante.20240208160251.1: ** estimateframeextents
 /*
  * XXX: We cheat here and always estimate normal frame
@@ -164,47 +164,46 @@ static void gravitate(int wingrav, int borderwidth, int *dx, int *dy)
 	}
 }
 //@+node:caminhante.20240208160225.1: ** fupdate
-void fupdate(struct frame *f)
-{
-	if (chaswmproto(f->client, WM_DELETE_WINDOW)) {
-		if (f->deletebutton == NULL) {
-			int sz = lineheight + 2;
-			f->deletebutton = bcreate(delete, f->client,
-					deletebitmap, f->window,
-					f->width - 1 - font->size - sz, 0,
-					sz, sz, NorthEastGravity);
-		}
-	} else if (f->deletebutton != NULL) {
-		bdestroy(f->deletebutton);
-		f->deletebutton = NULL;
-	}
+void fupdate (struct frame *f) {
+  if (chaswmproto(f->client, WM_DELETE_WINDOW)) {
+    if (f->deletebutton == NULL) {
+      int sz = lineheight + 2;
+      f->deletebutton = bcreate(delete, f->client,
+          deletebitmap, f->window,
+          f->width - 1 - font->size - sz, 0,
+          sz, sz, NorthEastGravity);
+    }
+  } else if (f->deletebutton != NULL) {
+    bdestroy(f->deletebutton);
+    f->deletebutton = NULL;
+  }
 
-	Bool hasfocus = chasfocus(f->client);
+  Bool hasfocus = chasfocus(f->client);
 
-	f->background = hasfocus ? &hlbackground : &background;
+  f->background = hasfocus ? &hlbackground : &background;
 
-	if (f->pixmap != None) {
-		XFreePixmap(dpy, f->pixmap);
-		f->pixmap = None;
-	}
-	f->namewidth = namewidth(font, f->client);
-	if (f->namewidth > 0) {
-		f->pixmap = XCreatePixmap(dpy, root, f->namewidth,
-				lineheight, DefaultDepth(dpy, scr));
-		XFillRectangle(dpy, f->pixmap, *f->background,
-				0, 0, f->namewidth, lineheight);
-		drawname(f->pixmap, font, hasfocus ? fhighlight: fnormal,
-				0, halfleading + font->ascent, f->client);
+  if (f->pixmap != None) {
+    XFreePixmap(dpy, f->pixmap);
+    f->pixmap = None;
+  }
+  f->namewidth = namewidth(font, f->client);
+  if (f->namewidth > 0) {
+    f->pixmap = XCreatePixmap(dpy, root, f->namewidth,
+        lineheight, DefaultDepth(dpy, scr));
+    XFillRectangle(dpy, f->pixmap, *f->background,
+        0, 0, f->namewidth, lineheight);
+    drawname(f->pixmap, font, hasfocus ? fhighlight: fnormal,
+        0, halfleading + font->ascent, f->client);
 
-		if (cgetdesk(f->client) == DESK_ALL) {
-			int y = halfleading + font->ascent + font->descent / 2;
-			XDrawLine(dpy, f->pixmap,
-					hasfocus ? hlforeground : foreground,
-					0, y, f->namewidth, y);
-		}
-	}
+    if (cgetdesk(f->client) == DESK_ALL) {
+      int y = halfleading + font->ascent + font->descent / 2;
+      XDrawLine(dpy, f->pixmap,
+          hasfocus ? hlforeground : foreground,
+          0, y, f->namewidth, y);
+    }
+  }
 
-	repaint(f);
+  repaint(f);
 }
 //@+node:caminhante.20240208160219.1: ** repaint
 static void repaint(struct frame *f)
@@ -381,8 +380,6 @@ struct frame *fcreate(struct client *c)
 	if (fcount == 0) {
 		cursortopleft = XCreateFontCursor(dpy, XC_top_left_corner);
 		cursortopright = XCreateFontCursor(dpy, XC_top_right_corner);
-    //NOTE https://tronche.com/gui/x/xlib/appendix/b/
-              cursorclose = XCreateFontCursor(dpy, XC_pirate);
 	}
 	fcount++;
 
@@ -511,7 +508,6 @@ void fdestroy(struct frame *f)
 	if (fcount == 0) {
 		XFreeCursor(dpy, cursortopleft);
 		XFreeCursor(dpy, cursortopright);
-              XFreeCursor(dpy, cursorclose);
 	}
 }
 //@+node:caminhante.20240208160113.1: ** fgetwin
@@ -530,9 +526,8 @@ struct geometry fgetgeom(struct frame *f)
 			.borderwidth = 0 };
 }
 //@+node:caminhante.20240208160100.1: ** delete
-static void delete(void *client, Time t)
-{
-	cdelete(client, t);
+static void delete (void *client, Time t) {
+  cdelete(client, t);
 }
 //@+node:caminhante.20240208160052.1: ** resizetopleft
 static void resizetopleft(void *self, int xdrag, int ydrag,
