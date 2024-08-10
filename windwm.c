@@ -27,9 +27,10 @@ exec "$0.bin" "$@"
 //@@language c
 //@@tabwidth -2
 //@+others
-//@+node:caminhante.20240208144409.1: ** /sobre
+//@+node:caminhante.20240208145241.1: ** /copyright notice
 /*
  * Copyright 2010 Johan Veenhuizen
+ * Copyleft 2024 X Caminhante
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),

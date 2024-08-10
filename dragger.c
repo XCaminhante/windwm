@@ -1,3 +1,9 @@
+//@+leo-ver=5-thin
+//@+node:caminhante.20240209172034.16: * @file dragger.c
+//@@tabwidth -2
+//@@language c
+//@+others
+//@-others
 /*
  * Copyright 2010 Johan Veenhuizen
  *
@@ -150,3 +156,4 @@ static void motionnotify(struct dragger *d, XMotionEvent *e)
 				e->x_root - d->x, e->y_root - d->y,
 				d->counter++, e->time);
 }
+//@-leo

@@ -1,3 +1,9 @@
+//@+leo-ver=5-thin
+//@+node:caminhante.20240209172034.11: * @file mwm.c
+//@@tabwidth -2
+//@@language c
+//@+others
+//@-others
 /*
  * Copyright 2010 Johan Veenhuizen
  *
@@ -111,3 +117,4 @@ static mwmhints *getmwmhints(struct client *c)
 	}
 	return h;
 }
+//@-leo

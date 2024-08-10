@@ -3,9 +3,10 @@
 //@@tabwidth -2
 //@@language c
 //@+others
-//@+node:caminhante.20240208145241.1: ** /sobre
+//@+node:caminhante.20240208145241.1: ** /copyright notice
 /*
  * Copyright 2010 Johan Veenhuizen
+ * Copyleft 2024 X Caminhante
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -33,16 +34,16 @@
 #include "wind.h"
 //@+node:caminhante.20240208145230.1: ** struct button
 struct button {
-	struct listener listener;
-	void (*function)(void *, Time);
-	void *arg;
-	struct bitmap *bitmap;
-	Pixmap pixmap;
-	int width;
-	int height;
-	Window window;
-	Bool pressed;
-	Bool entered;
+  struct listener listener;
+  void (*function)(void *, Time);
+  void *arg;
+  struct bitmap *bitmap;
+  Pixmap pixmap;
+  int width;
+  int height;
+  Window window;
+  Bool pressed;
+  Bool entered;
 };
 //@+node:caminhante.20240208145222.1: ** /protótipos
 static void bupdate(struct button *);
@@ -54,73 +55,66 @@ static void expose(struct button *, XExposeEvent *);
 static void unmapnotify(struct button *, XUnmapEvent *);
 static void bevent(void *, XEvent *);
 //@+node:caminhante.20240208145215.1: ** bupdate
-static void bupdate(struct button *b)
-{
-      //BUG por algum motivo o valor de b->bitmap se repete
-      DEBUG_EXPR("%p", b->bitmap );
-      uint32_t bitmap = (uint32_t)b->bitmap & 0xFFFFFF00;
-      if (bitmap >= 0x400000) { return; }
-      //BUG nesses casos, b->bitmap->width não está alocado
-      // DEBUG_EXPR("%d", b->bitmap->width );
+static void bupdate(struct button *b) {
+  //BUG por algum motivo o valor de b->bitmap recebido as vezes é um ponteiro inválido
+  DEBUG_EXPR("%p", b->bitmap );
+#ifdef BIT32
+  uint32_t bitmap = (uint32_t)(b->bitmap) & 0xFFFFFF00;
+  //BUG nesses casos, b->bitmap->width não está alocado
+  // DEBUG_EXPR("%d", b->bitmap->width );
+  if (bitmap >= 0x400000) { return; }
+#endif
+  Bool invert = b->pressed && b->entered;
+  GC fg = invert ? background : foreground;
+  GC bg = invert ? foreground : background;
 
-	Bool invert = b->pressed && b->entered;
-	GC fg = invert ? background : foreground;
-	GC bg = invert ? foreground : background;
+  XFillRectangle(dpy, b->pixmap, bg, 0, 0, b->width, b->height);
 
-	XFillRectangle(dpy, b->pixmap, bg, 0, 0, b->width, b->height);
+  drawbitmap(b->pixmap, fg, b->bitmap, (b->width - b->bitmap->width) / 2, (b->height - b->bitmap->height) / 2);
 
-	drawbitmap(b->pixmap, fg, b->bitmap,
-			(b->width - b->bitmap->width) / 2,
-			(b->height - b->bitmap->height) / 2);
+  if (!invert) {
+    XSetLineAttributes(dpy, fg,
+      b->entered ? 1 + 2 * halfleading : 0,
+      LineSolid, CapButt, JoinMiter);
+    XDrawRectangle(dpy, b->pixmap, fg,
+      0, 0, b->width - 1, b->height - 1);
+    XSetLineAttributes(dpy, fg, 0, LineSolid, CapButt, JoinMiter);
+  }
 
-	if (!invert) {
-		XSetLineAttributes(dpy, fg,
-				b->entered ? 1 + 2 * halfleading : 0,
-				LineSolid, CapButt, JoinMiter);
-		XDrawRectangle(dpy, b->pixmap, fg,
-				0, 0, b->width - 1, b->height - 1);
-		XSetLineAttributes(dpy, fg, 0, LineSolid, CapButt, JoinMiter);
-	}
-
-	XCopyArea(dpy, b->pixmap, b->window, fg,
-			0, 0, b->width, b->height, 0, 0);
+  XCopyArea(dpy, b->pixmap, b->window, fg,
+    0, 0, b->width, b->height, 0, 0);
 }
 //@+node:caminhante.20240208145210.1: ** buttonpress
-static void buttonpress(struct button *b, XButtonEvent *e)
-{
-      (void) e;
-	b->pressed = True;
-      DEBUG_EXPR("%p", b->bitmap);
-	bupdate(b);
+static void buttonpress(struct button *b, XButtonEvent *e) {
+  (void) e;
+  b->pressed = True;
+  DEBUG_EXPR("%p", b->bitmap);
+  bupdate(b);
 }
 //@+node:caminhante.20240208145204.1: ** buttonrelease
-static void buttonrelease(struct button *b, XButtonEvent *e)
-{
-	if (e->button == Button1) {
-		if (b->pressed && b->entered) {
-			b->function(b->arg, e->time); }
-		b->pressed = False;
-            DEBUG_EXPR("%p", b->bitmap);
-		bupdate(b);
-	}
+static void buttonrelease(struct button *b, XButtonEvent *e) {
+  if (e->button == Button1) {
+    if (b->pressed && b->entered) { b->function(b->arg, e->time); }
+    b->pressed = False;
+    DEBUG_EXPR("%p", b->bitmap);
+    bupdate(b);
+  }
 }
 //@+node:caminhante.20240208145155.1: ** enternotify
-static void enternotify(struct button *b, XCrossingEvent *e)
-{
-      (void) e;
-	b->entered = True;
-      DEBUG_EXPR("%p", b->bitmap);
-	bupdate(b);
+static void enternotify(struct button *b, XCrossingEvent *e) {
+  (void) e;
+  b->entered = True;
+  DEBUG_EXPR("%p", b->bitmap);
+  bupdate(b);
 }
 //@+node:caminhante.20240208145149.1: ** leavenotify
-static void leavenotify(struct button *b, XCrossingEvent *e)
-{
-      (void) e;
-	if (b->entered) {
-		b->entered = False;
-            DEBUG_EXPR("%p", b->bitmap);
-		bupdate(b);
-	}
+static void leavenotify(struct button *b, XCrossingEvent *e) {
+  (void) e;
+  if (b->entered) {
+    b->entered = False;
+    DEBUG_EXPR("%p", b->bitmap);
+    bupdate(b);
+  }
 }
 //@+node:caminhante.20240208145142.1: ** unmapnotify
 static void unmapnotify(struct button *b, XUnmapEvent *e)

@@ -1,5 +1,11 @@
+//@+leo-ver=5-thin
+//@+node:caminhante.20240209172034.7: * @file wind.h
+//@@tabwidth -2
+//@@language c
 #ifndef WIND_H
 #define WIND_H
+//@+others
+//@-others
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -215,3 +221,4 @@ void drawbitmap(Drawable, GC, struct bitmap *, size_t, size_t);
 unsigned long getpixel(const char *);
 
 #endif
+//@-leo
